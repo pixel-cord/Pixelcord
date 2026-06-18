@@ -47,7 +47,7 @@ async function pollHiddenVersion() {
 
 export default definePlugin({
     name: "HideBadges",
-    description: "Hide your own badges for everyone using PixelCord. Needs the pixelcord-api backend.",
+    description: "Hide your own badges for everyone using PixelCord.",
     authors: [PixelCordDevs.myvings],
     settings,
 

@@ -114,7 +114,7 @@ const patchCsp = (headers: PolicyMap) => {
         pushDirective("script-src", "'unsafe-inline'", "'unsafe-eval'");
 
         for (const directive of ["style-src", "connect-src", "img-src", "font-src", "media-src", "worker-src"]) {
-            pushDirective(directive, "blob:", "data:", "vencord:", "vesktop:", "equicord:", "equibop:");
+            pushDirective(directive, "blob:", "data:", "vencord:", "vesktop:", "pixelcord:", "equibop:");
         }
 
         for (const [host, directives] of Object.entries(NativeSettings.store.customCspRules)) {
