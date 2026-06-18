@@ -37,7 +37,7 @@ import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal } from "
 const CONTRIBUTOR_BADGE = "https://cdn.discordapp.com/emojis/1092089799109775453.png?size=64";
 const EQUICORD_CONTRIBUTOR_BADGE = "https://equicord.org/assets/favicon.png";
 const USERPLUGIN_CONTRIBUTOR_BADGE = "https://equicord.org/assets/icons/misc/userplugin.png";
-const PIXELCORD_CONTRIBUTOR_BADGE = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" rx="6" fill="#5865F2"/><text x="12" y="16" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">PX</text></svg>')}`;
+const PIXELCORD_CONTRIBUTOR_BADGE = "https://cdn.pixelcord.com.br/uploads/image-a005087cdafda23dabae78aae6f81908.png";
 
 const ContributorBadge: ProfileBadge = {
     id: "vencord_contributor_badge",
@@ -100,7 +100,7 @@ const UserPluginContributorBadge: ProfileBadge = {
     },
 };
 
-const PIXELCORD_BADGES_URL = IS_DEV ? "http://localhost:8088/badges.json" : "https://pixelcord-api.example/badges.json";
+const PIXELCORD_BADGES_URL = "https://api.pixelcord.com.br/badges.json";
 const PIXELCORD_BADGES_VERSION_URL = PIXELCORD_BADGES_URL.replace("/badges.json", "/badges/version");
 
 let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;

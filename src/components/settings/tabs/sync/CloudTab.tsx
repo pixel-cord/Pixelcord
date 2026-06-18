@@ -25,9 +25,8 @@ import { Paragraph } from "@components/Paragraph";
 import { SettingsTab, wrapTab } from "@components/settings/tabs/BaseTab";
 import { Margins } from "@utils/margins";
 
-// PixelCord's own backend (pixelcord-api). Dev uses the local instance; prod uses
-// your deployed origin. The cloud sync protocol hangs off /v1 on this origin.
-const CLOUD_URL = IS_DEV ? "http://localhost:8088/" : "https://pixelcord-api.example/";
+// PixelCord's own backend (pixelcord-api). The cloud sync protocol hangs off /v1 on this origin.
+const CLOUD_URL = "https://api.pixelcord.com.br/";
 
 function CloudTab() {
     const settings = useSettings(["cloud.authenticated", "cloud.settingsSync", "cloud.url"]);
