@@ -6,7 +6,7 @@
 
 import { Logger } from "@utils/Logger";
 
-export const BASE_URL = IS_DEV ? "http://localhost:8088" : "https://pixelcord-api.example";
+export const BASE_URL = "https://api.pixelcord.com.br";
 export const API_URL = `${BASE_URL}/api`;
 export let AUTHORIZE_URL = `${API_URL}/authorize`;
 export let CLIENT_ID = "";

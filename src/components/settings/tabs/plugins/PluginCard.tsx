@@ -21,10 +21,6 @@ import { openPluginModal } from "./PluginModal";
 const logger = new Logger("PluginCard");
 const cl = classNameFactory("vc-plugins-");
 
-const PIXELCORD_PLACEHOLDER_ICON = `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><rect width="22" height="22" rx="6" fill="#5865F2"/><text x="11" y="15" font-family="sans-serif" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle">PX</text></svg>'
-)}`;
-
 interface PluginCardProps extends React.HTMLProps<HTMLDivElement> {
     plugin: Plugin;
     disabled?: boolean;
@@ -110,7 +106,7 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
         },
         {
             condition: isCorecordPlugin,
-            src: PIXELCORD_PLACEHOLDER_ICON,
+            src: "https://cdn.pixelcord.com.br/uploads/image-a005087cdafda23dabae78aae6f81908.png",
             alt: "PixelCord",
             title: "PixelCord Plugin"
         },

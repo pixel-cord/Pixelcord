@@ -147,7 +147,7 @@ const DefaultSettings: Settings = {
 
     cloud: {
         authenticated: false,
-        url: IS_DEV ? "http://localhost:8088/" : "https://pixelcord-api.example/",
+        url: "https://api.pixelcord.com.br/",
         settingsSync: false,
         settingsSyncVersion: 0
     },
