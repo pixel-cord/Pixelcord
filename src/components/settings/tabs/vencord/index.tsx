@@ -17,6 +17,7 @@ import { FolderIcon, GithubIcon, LogIcon, PaintbrushIcon, RestartIcon } from "@c
 import { Notice } from "@components/Notice";
 import { Paragraph } from "@components/Paragraph";
 import { openContributorModal, openPluginModal, SettingsTab, wrapTab } from "@components/settings";
+import { CustomBadgeSection } from "@components/settings/CustomBadgeSection";
 import { QuickAction, QuickActionCard } from "@components/settings/QuickAction";
 import { SpecialCard } from "@components/settings/SpecialCard";
 import BadgeAPI from "@plugins/_api/badges";
@@ -193,6 +194,9 @@ function EquicordSettings() {
                     <DonateButtonComponent />
                 </SpecialCard>
             )}
+
+            <CustomBadgeSection />
+
             {isAnyPluginDev(user?.id) && (
                 <SpecialCard
                     title="Contributions"
@@ -283,7 +287,7 @@ function EquicordSettings() {
     );
 }
 
-export default wrapTab(EquicordSettings, "Equicord Settings");
+export default wrapTab(EquicordSettings, "PixelCord Settings");
 
 export function isEquicordDonor(userId: string): boolean {
     const donorBadges = BadgeAPI.getEquicordDonorBadges(userId);

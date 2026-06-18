@@ -1,0 +1,194 @@
+.vc-msgcleaner-body {
+    padding: 20px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.vc-msgcleaner-warn {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgb(242 63 67 / 10%);
+    border: 1px solid rgb(242 63 67 / 25%);
+    color: var(--text-normal, #dbdee1);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.vc-msgcleaner-warn-icon {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-msgcleaner-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-msgcleaner-label {
+    color: var(--header-secondary, #b5bac1);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.vc-msgcleaner-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vc-msgcleaner-chip {
+    appearance: none;
+    border: 1px solid var(--background-modifier-accent, rgb(255 255 255 / 8%));
+    background: var(--input-background, rgb(0 0 0 / 20%));
+    color: var(--text-muted, #b5bac1);
+    border-radius: 999px;
+    padding: 7px 15px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.vc-msgcleaner-chip:hover {
+    color: var(--text-normal, #dbdee1);
+    border-color: var(--background-modifier-active, rgb(255 255 255 / 16%));
+}
+
+.vc-msgcleaner-chip-on,
+.vc-msgcleaner-chip-on:hover {
+    color: #fff;
+    background: var(--brand-500, #5865f2);
+    border-color: var(--brand-500, #5865f2);
+    box-shadow: 0 3px 10px rgb(88 101 242 / 35%);
+}
+
+.vc-msgcleaner-hint {
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+}
+
+.vc-msgcleaner-blocks-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vc-msgcleaner-blocks-val {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    border-radius: 6px;
+    padding: 2px 9px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.vc-msgcleaner-start {
+    width: 100%;
+    margin-top: 2px;
+}
+
+.vc-msgcleaner-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-msgcleaner-job {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 11px 13px;
+    border-radius: 9px;
+    background: var(--background-secondary-alt, rgb(255 255 255 / 3%));
+}
+
+.vc-msgcleaner-job-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vc-msgcleaner-job-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background: var(--text-muted, #949ba4);
+}
+
+.vc-msgcleaner-job-dot-running {
+    background: var(--brand-500, #5865f2);
+    animation: vc-msgcleaner-pulse 1.2s ease-in-out infinite;
+}
+
+.vc-msgcleaner-job-dot-done {
+    background: var(--status-positive, #23a55a);
+}
+
+.vc-msgcleaner-job-dot-error {
+    background: var(--status-danger, #f23f43);
+}
+
+.vc-msgcleaner-job-label {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-msgcleaner-job-status {
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.vc-msgcleaner-job-cancel {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-danger, #f23f43);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0;
+}
+
+.vc-msgcleaner-job-cancel:hover {
+    text-decoration: underline;
+}
+
+.vc-msgcleaner-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--background-modifier-accent, rgb(255 255 255 / 8%));
+    overflow: hidden;
+}
+
+.vc-msgcleaner-progress-fill {
+    height: 100%;
+    background: var(--brand-500, #5865f2);
+    border-radius: 2px;
+    transition: width 0.25s ease;
+}
+
+@keyframes vc-msgcleaner-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}

@@ -121,7 +121,7 @@ export function EquicordDonorModal() {
                 </div>
                 <div>
                     <Flex justifyContent="center" style={{ width: "100%" }}>
-                        <DonateButton equicord={true} />
+                        <DonateButton />
                     </Flex>
                 </div>
             </Modal>
