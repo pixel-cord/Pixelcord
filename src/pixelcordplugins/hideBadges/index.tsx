@@ -11,7 +11,7 @@ import { UserStore } from "@webpack/common";
 
 import { SettingsComponent } from "./components";
 import { useAuthorizationStore } from "./lib/auth";
-import { BASE_URL, loadApiConfig } from "./lib/constants";
+import { loadApiConfig } from "./lib/constants";
 import { useUsersHiddenStore } from "./lib/store";
 
 const settings = definePluginSettings({
@@ -21,29 +21,6 @@ const settings = definePluginSettings({
         component: SettingsComponent
     }
 });
-
-const VERSION_URL = `${BASE_URL}/badges/version`;
-let versionIntervalId: any;
-let lastVersion: number | null = null;
-
-// Rotating cache: the version bumps whenever a badge OR a hidden-set changes. When it
-// moves, force-refetch the cached hidden sets so hide/unhide propagates to everyone fast.
-async function pollHiddenVersion() {
-    try {
-        const { version } = await fetch(VERSION_URL).then(r => r.json());
-        if (typeof version !== "number") return;
-        if (lastVersion === null) {
-            lastVersion = version;
-            return;
-        }
-        if (version !== lastVersion) {
-            lastVersion = version;
-            useUsersHiddenStore.getState().refreshAll();
-        }
-    } catch {
-        // backend unreachable; retry next tick
-    }
-}
 
 export default definePlugin({
     name: "HideBadges",
@@ -77,12 +54,5 @@ export default definePlugin({
 
         const me = UserStore.getCurrentUser();
         if (me) useUsersHiddenStore.getState().request(me.id);
-
-        clearInterval(versionIntervalId);
-        versionIntervalId = setInterval(pollHiddenVersion, 1000 * 20);
-    },
-
-    stop() {
-        clearInterval(versionIntervalId);
     }
 });

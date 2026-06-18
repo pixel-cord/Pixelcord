@@ -19,10 +19,10 @@
 import "./fixDiscordBadgePadding.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
-import { isPluginEnabled } from "@api/PluginManager";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
 import hideBadges from "@pixelcordplugins/hideBadges";
+import { useUsersHiddenStore } from "@pixelcordplugins/hideBadges/lib/store";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -139,6 +139,10 @@ async function pollPixelCordBadgesVersion() {
         if (version !== lastBadgesVersion) {
             lastBadgesVersion = version;
             PixelCordDonorBadges = await loadBadges(PIXELCORD_BADGES_URL, true).catch(() => PixelCordDonorBadges);
+            // The same version counter bumps when any hidden-set changes. Refresh cached
+            // hidden sets here (this plugin is always-on) so hide/unhide reaches every
+            // viewer, even those who never enabled the HideBadges plugin.
+            useUsersHiddenStore.getState().refreshAll();
         }
     } catch {
         // backend unreachable; try again next tick
@@ -261,7 +265,9 @@ export default definePlugin({
 
     filterBadges(profile: { userId?: string; } | null, badges: { id: string; }[]) {
         const userId = profile?.userId;
-        if (!Array.isArray(badges) || !userId || !isPluginEnabled(hideBadges.name)) return badges;
+        // Always apply the global hidden set: a badge a user hid must disappear for
+        // EVERYONE on PixelCord, not just viewers who enabled the HideBadges plugin.
+        if (!Array.isArray(badges) || !userId) return badges;
 
         const hidden = hideBadges.getHiddenBadges(userId);
         return hidden.length ? badges.filter(badge => !hidden.includes(badge.id)) : badges;
