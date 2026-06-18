@@ -38,6 +38,8 @@ export const CspPolicies: PolicyMap = {
 
     "fonts.googleapis.com": CssSrc, // Google Fonts, used by many themes
 
+    "betterdiscord.app": ImageSrc, // BetterDiscord theme store thumbnails
+    "cdn.cee.bio": ImageSrc, // PixelCord custom badge images
     "i.imgur.com": ImageSrc, // Imgur, used by some themes
     "i.ibb.co": ImageSrc, // ImgBB, used by some themes
     "i.pinimg.com": ImageSrc, // Pinterest, used by some themes
@@ -57,6 +59,8 @@ export const CspPolicies: PolicyMap = {
     "ws.audioscrobbler.com": ConnectSrc, // Last.fm API
     "translate-pa.googleapis.com": ConnectSrc, // Google Translate API
     "*.vencord.dev": ImageSrc, // VenCloud (api.vencord.dev) and Badges (badges.vencord.dev)
+    "badge.equicord.org": ImageSrc, // Equicord donor badges
+    "pixelcord-api.example": ImageSrc, // PixelCord donor badges (replace with your real pixelcord-api domain in production; dev uses localhost)
     "manti.vendicated.dev": ImageSrc, // ReviewDB API
     "decor.fieryflames.dev": ConnectSrc, // Decor API
     "ugc.decor.fieryflames.dev": ImageSrc, // Decor CDN

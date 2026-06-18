@@ -49,18 +49,6 @@ export const equicordCommands: PaletteCommand[] = [
         }]
     },
     {
-        id: "equicord.changelog",
-        title: "Open Changelog",
-        section: SECTION,
-        keywords: ["changelog", "news", "whats new"],
-        icon: BoltIcon,
-        actions: [{
-            id: "run",
-            label: "Open Changelog",
-            run: () => void openSettingsPage("equicord_changelog")
-        }]
-    },
-    {
         id: "equicord.restart",
         title: "Restart Discord",
         section: SECTION,

@@ -23,19 +23,19 @@ import { openInviteModal } from "@utils/discord";
 import { ButtonProps } from "@vencord/discord-types";
 import { showToast } from "@webpack/common";
 
+import { openDonateModal } from "./DonateModal";
+
 export function DonateButton({
-    equicord = false,
     className,
     ...props
-}: Partial<ButtonProps> & { equicord?: boolean; }) {
-    const link = equicord ? "https://github.com/sponsors/thororen1234" : "https://github.com/sponsors/Vendicated";
+}: Partial<ButtonProps>) {
     return (
         <Button
             {...props}
             variant="none"
             size="medium"
             type="button"
-            onClick={() => VencordNative.native.openExternal(link)}
+            onClick={() => openDonateModal()}
             className={className || "vc-donate-button"}
         >
             <Heart />

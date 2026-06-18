@@ -5,10 +5,9 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { BackupRestoreIcon, CloudIcon, LogIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PluginsIcon, UpdaterIcon } from "@components/Icons";
+import { BackupRestoreIcon, CloudIcon, ColorPaletteIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PluginsIcon, UpdaterIcon } from "@components/Icons";
 import {
     BackupAndRestoreTab,
-    ChangelogTab,
     CloudTab,
     PatchHelperTab,
     PluginsTab,
@@ -192,8 +191,8 @@ export default definePlugin({
         const equicordEntries: SettingsLayoutNode[] = [
             buildEntry({
                 key: "equicord_main",
-                title: "Equicord",
-                panelTitle: "Equicord Settings",
+                title: "PixelCord",
+                panelTitle: "PixelCord Settings",
                 Component: VencordTab,
                 Icon: MainSettingsIcon
             }),
@@ -209,23 +208,23 @@ export default definePlugin({
                 Component: ThemesTab,
                 Icon: PaintbrushIcon
             }),
+            buildEntry({
+                key: "pixelcord_theme_store",
+                title: "Theme Store",
+                Component: require("@pixelcordplugins/betterDiscordThemes/StoreTab").default,
+                Icon: ColorPaletteIcon
+            }),
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
                 key: "equicord_updater",
                 title: "Updater",
-                panelTitle: "Equicord Updater",
+                panelTitle: "PixelCord Updater",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
-                key: "equicord_changelog",
-                title: "Changelog",
-                Component: ChangelogTab,
-                Icon: LogIcon,
-            }),
-            buildEntry({
                 key: "equicord_cloud",
                 title: "Cloud",
-                panelTitle: "Equicord Cloud",
+                panelTitle: "PixelCord Cloud",
                 Component: CloudTab,
                 Icon: CloudIcon
             }),
@@ -247,7 +246,7 @@ export default definePlugin({
         const equicordSection: SettingsLayoutNode = {
             key: "equicord_section",
             type: LayoutTypes.SECTION,
-            useTitle: () => "Equicord Settings",
+            useTitle: () => "PixelCord Settings",
             buildLayout: () => equicordEntries
         };
 
