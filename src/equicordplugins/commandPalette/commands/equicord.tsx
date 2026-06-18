@@ -8,7 +8,7 @@ import type { PaletteCommand } from "../api/types";
 import { BoltIcon, GearIcon, PaintIcon, RestartIcon } from "../ui/icons";
 import { openSettingsPage } from "./openSettings";
 
-const SECTION = "Equicord";
+const SECTION = "Pixelcord";
 
 export const equicordCommands: PaletteCommand[] = [
     {
