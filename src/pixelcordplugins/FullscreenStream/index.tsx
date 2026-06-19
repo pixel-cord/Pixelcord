@@ -7,6 +7,7 @@
 import "./style.css";
 
 import { definePluginSettings } from "@api/Settings";
+import { PixelCordDevs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 
 const enum FitMode {
@@ -150,7 +151,7 @@ function onFullscreenChange() {
 export default definePlugin({
     name: "FullscreenStream",
     description: "Watch screen-share streams in true fullscreen that fills the entire screen with no black bars. Double-click a stream (or press F) to toggle.",
-    authors: [{ name: "outlayer", id: 1499140821696647301n }],
+    authors: [PixelCordDevs.outlayer],
     tags: ["Voice", "Media", "Appearance"],
     settings,
 

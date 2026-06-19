@@ -1498,7 +1498,8 @@ let onboardingTimer: ReturnType<typeof setTimeout> | undefined;
 export default definePlugin({
     name: "MessageSearch",
     // Static English here on purpose — see the note on the settings description above.
-    description: I18N.en.plugin_desc,
+    // String literal (not I18N.en.plugin_desc) so the plugin-list generator can parse it.
+    description: "Search through every message you've sent on Discord — the mobile app's global search, on desktop. Adds a button that opens a tabbed search (Messages, Media, Files, Links, Pins, People).",
     authors: [PixelCordDevs.outlayer, PixelCordDevs.myvings],
     settings,
 
