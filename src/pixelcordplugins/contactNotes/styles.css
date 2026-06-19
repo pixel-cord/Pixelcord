@@ -1,0 +1,134 @@
+.vc-contactnotes-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 2px 8px;
+    overflow-x: hidden;
+}
+
+.vc-contactnotes-body section {
+    min-width: 0;
+}
+
+.vc-contactnotes-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.vc-contactnotes-tag {
+    appearance: none;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.12s ease;
+}
+
+.vc-contactnotes-tag:hover {
+    filter: brightness(1.1);
+}
+
+.vc-contactnotes-tag-x {
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.85;
+}
+
+.vc-contactnotes-tag-add {
+    display: flex;
+    gap: 8px;
+}
+
+.vc-contactnotes-tag-add > :first-child {
+    flex: 1;
+}
+
+.vc-contactnotes-add-btn {
+    appearance: none;
+    border: none;
+    background: var(--button-secondary-background, #4e5058);
+    color: var(--text-normal, #dbdee1);
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.12s ease, opacity 0.12s ease;
+}
+
+.vc-contactnotes-add-btn:hover {
+    filter: brightness(1.15);
+}
+
+.vc-contactnotes-add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-contactnotes-pending {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-positive, #2dc770);
+}
+
+.vc-contactnotes-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.vc-contactnotes-preset {
+    appearance: none;
+    border: 1px solid var(--background-modifier-accent, rgb(255 255 255 / 8%));
+    background: var(--input-background, rgb(0 0 0 / 20%));
+    color: var(--text-muted, #b5bac1);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.vc-contactnotes-preset:hover {
+    color: var(--text-normal, #dbdee1);
+    border-color: var(--background-modifier-active, rgb(255 255 255 / 16%));
+}
+
+.vc-contactnotes-preset-on,
+.vc-contactnotes-preset-on:hover {
+    color: #fff;
+    background: var(--brand-500, #5865f2);
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-contactnotes-datetime {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 8px;
+    padding: 9px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border, rgb(255 255 255 / 10%));
+    background: var(--input-background, rgb(0 0 0 / 20%));
+    color: var(--text-normal, #dbdee1);
+    font-size: 14px;
+    font-family: inherit;
+    color-scheme: dark;
+}
+
+.vc-contactnotes-datetime:focus {
+    outline: none;
+    border-color: var(--brand-500, #5865f2);
+}

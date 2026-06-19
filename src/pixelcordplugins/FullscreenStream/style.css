@@ -1,0 +1,37 @@
+/* FullscreenStream */
+
+/* We fullscreen the video *tile container* (not the raw <video>) to avoid the
+   green-screen bug from fullscreening a hardware-accelerated video element. */
+.vc-fss-active:fullscreen {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: #000 !important;
+}
+
+/* Stretch the video inside the fullscreen tile to fill the whole screen.
+   position: fixed is relative to the fullscreen element, so it bypasses any
+   intermediate wrappers that would otherwise leave black bars. */
+.vc-fss-active:fullscreen video {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    object-fit: var(--vc-fss-fit, cover) !important;
+    background-color: #000 !important;
+    cursor: default;
+}
+
+/* Fallback: if no tile wrapper was found and the <video> itself went
+   fullscreen, still make it fill the screen. */
+video.vc-fss-active:fullscreen {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: var(--vc-fss-fit, cover) !important;
+}
+
+/* Optional: also remove black bars in the normal (non-fullscreen) call player. */
+html.vc-fss-fill-embedded [data-selenium-video-tile] video {
+    object-fit: var(--vc-fss-fit, cover) !important;
+}
