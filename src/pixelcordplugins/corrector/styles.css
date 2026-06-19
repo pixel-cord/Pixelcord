@@ -1,0 +1,31 @@
+.vc-correct-accessory {
+    color: var(--text-muted);
+    margin-top: 0.5em;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.2rem;
+    white-space: break-spaces;
+}
+
+.vc-correct-accessory-icon {
+    margin-right: 0.25em;
+    vertical-align: middle;
+}
+
+.vc-correct-dismiss {
+    all: unset;
+    cursor: pointer;
+    color: var(--text-link);
+}
+
+.vc-correct-dismiss:is(:hover, :focus) {
+    text-decoration: underline;
+}
+
+.vc-correct-auto-correct {
+    color: var(--green-360);
+}
+
+.vc-correct-chat-button {
+    scale: 1.085;
+}
