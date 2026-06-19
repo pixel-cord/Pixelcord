@@ -56,7 +56,7 @@ function ManageModal({ modalProps }: { modalProps: RenderModalProps; }) {
         <Modal {...modalProps} size="md" title="Hide your badges">
             <div style={{ padding: 16 }}>
                 <Paragraph className={Margins.bottom16}>
-                    Badges you hide here disappear for everyone using PixelCord. This covers both native Discord badges and PixelCord rendered ones, but only for people running PixelCord.
+                    Badges you hide here disappear for everyone using Pixelcord. This covers both native Discord badges and Pixelcord rendered ones, but only for people running Pixelcord.
                 </Paragraph>
                 {loading
                     ? <Paragraph>Loading…</Paragraph>

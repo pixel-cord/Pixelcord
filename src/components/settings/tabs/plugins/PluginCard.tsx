@@ -107,8 +107,8 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
         {
             condition: isCorecordPlugin,
             src: "https://cdn.pixelcord.com.br/uploads/image-a005087cdafda23dabae78aae6f81908.png",
-            alt: "PixelCord",
-            title: "PixelCord Plugin"
+            alt: "Pixelcord",
+            title: "Pixelcord Plugin"
         },
         {
             condition: isVencordPlugin,

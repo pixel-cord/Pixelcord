@@ -9,7 +9,7 @@ import definePlugin from "@utils/types";
 
 export default definePlugin({
     name: "BetterDiscordThemes",
-    description: "Native backend for the built-in PixelCord Theme Store.",
+    description: "Native backend for the built-in Pixelcord Theme Store.",
     authors: [PixelCordDevs.myvings],
     hidden: true
 });

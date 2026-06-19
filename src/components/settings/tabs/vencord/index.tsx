@@ -287,7 +287,7 @@ function EquicordSettings() {
     );
 }
 
-export default wrapTab(EquicordSettings, "PixelCord Settings");
+export default wrapTab(EquicordSettings, "Pixelcord Settings");
 
 export function isEquicordDonor(userId: string): boolean {
     const donorBadges = BadgeAPI.getEquicordDonorBadges(userId);

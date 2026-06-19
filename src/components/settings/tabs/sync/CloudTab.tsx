@@ -25,7 +25,7 @@ import { Paragraph } from "@components/Paragraph";
 import { SettingsTab, wrapTab } from "@components/settings/tabs/BaseTab";
 import { Margins } from "@utils/margins";
 
-// PixelCord's own backend (pixelcord-api). The cloud sync protocol hangs off /v1 on this origin.
+// Pixelcord's own backend (pixelcord-api). The cloud sync protocol hangs off /v1 on this origin.
 const CLOUD_URL = "https://api.pixelcord.com.br/";
 
 function CloudTab() {
@@ -36,12 +36,12 @@ function CloudTab() {
         <SettingsTab>
             <Heading className={Margins.top16}>Cloud Sync</Heading>
             <Paragraph className={Margins.bottom16}>
-                Sincronize suas configurações do PixelCord — plugins ativados e suas opções, temas e o QuickCSS — com o backend do PixelCord, pra manter tudo igual entre seus dispositivos. É só ligar.
+                Sincronize suas configurações do Pixelcord — plugins ativados e suas opções, temas e o QuickCSS — com o backend do Pixelcord, pra manter tudo igual entre seus dispositivos. É só ligar.
             </Paragraph>
 
             <FormSwitch
                 title="Ativar Cloud Sync"
-                description="Conecta com sua conta PixelCord (login via Discord) e mantém suas configurações sincronizadas automaticamente. Desligue pra parar de sincronizar."
+                description="Conecta com sua conta Pixelcord (login via Discord) e mantém suas configurações sincronizadas automaticamente. Desligue pra parar de sincronizar."
                 value={cloud.authenticated}
                 onChange={async v => {
                     if (v) {

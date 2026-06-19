@@ -162,7 +162,7 @@ function CreateBadgeModal({ modalProps, token, onDone }: { modalProps: RenderMod
 
                 <div className={cl("field")}>
                     <Heading tag="h5">Nome da badge</Heading>
-                    <TextInput value={tooltip} onChange={setTooltip} placeholder="Ex.: Apoiador PixelCord" />
+                    <TextInput value={tooltip} onChange={setTooltip} placeholder="Ex.: Apoiador Pixelcord" />
                 </div>
 
                 <div className={cl("field")}>

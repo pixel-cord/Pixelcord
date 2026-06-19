@@ -24,7 +24,7 @@ const settings = definePluginSettings({
 
 export default definePlugin({
     name: "HideBadges",
-    description: "Hide your own badges for everyone using PixelCord.",
+    description: "Hide your own badges for everyone using Pixelcord.",
     authors: [PixelCordDevs.myvings],
     settings,
 
