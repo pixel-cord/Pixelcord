@@ -5,22 +5,48 @@
  */
 
 import { insertTextIntoChatInputBox } from "@utils/discord";
-import { ComponentDispatch, DraftStore, DraftType, SelectedChannelStore } from "@webpack/common";
+import { DraftStore, DraftType, SelectedChannelStore } from "@webpack/common";
 
 import { setShouldShowCorrectEnabledTooltip } from "./CorrectorIcon";
 import { settings } from "./settings";
 import { correctSilent } from "./utils";
 
 let timer: any;
-// Text we last wrote ourselves, so re-correcting our own output is skipped.
+// True while we're writing our own correction, so the draft change it produces
+// doesn't re-trigger another correction (that feedback loop is what duplicated
+// the text). lastApplied is a second guard against re-correcting our own output.
+let applying = false;
 let lastApplied = "";
 
 function getDraft(channelId: string): string {
     return DraftStore.getDraft(channelId, DraftType.ChannelMessage) ?? "";
 }
 
+// Replace the WHOLE chat input. CLEAR_TEXT proved unreliable (it left the old
+// text in place, so insert just appended). Instead select all of the Slate
+// editor's contents and insert over the selection — INSERT_TEXT replaces a
+// non-collapsed selection.
+function setChatInput(text: string) {
+    let editor = document.activeElement as HTMLElement | null;
+    if (!editor?.matches?.('[data-slate-editor="true"]'))
+        editor = document.querySelector<HTMLElement>('[data-slate-editor="true"]');
+
+    if (editor) {
+        editor.focus();
+        const sel = window.getSelection();
+        if (sel) {
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+
+    insertTextIntoChatInputBox(text);
+}
+
 function onDraftChange() {
-    if (!settings.store.autoCorrect) return;
+    if (!settings.store.autoCorrect || applying) return;
     clearTimeout(timer);
     timer = setTimeout(runCorrection, Math.max(400, settings.store.correctDelay || 1200));
 }
@@ -32,8 +58,7 @@ async function runCorrection() {
     const text = getDraft(channelId);
     if (text.trim().length < 2 || text === lastApplied) return;
 
-    // Leave the word currently being typed (no trailing whitespace) untouched, so
-    // we never "autocorrect" a half-typed word out from under the cursor.
+    // Leave the word currently being typed (no trailing whitespace) untouched.
     let head = text;
     let tail = "";
     if (!/\s$/.test(text)) {
@@ -56,8 +81,13 @@ async function runCorrection() {
     if (getDraft(channelId) !== text) return;
 
     lastApplied = corrected;
-    ComponentDispatch.dispatchToLastSubscribed("CLEAR_TEXT");
-    insertTextIntoChatInputBox(corrected);
+    applying = true;
+    try {
+        setChatInput(corrected);
+    } finally {
+        // Let the draft-change events from our own write settle before re-listening.
+        setTimeout(() => { applying = false; }, 250);
+    }
 
     setShouldShowCorrectEnabledTooltip?.(true);
     setTimeout(() => setShouldShowCorrectEnabledTooltip?.(false), 2000);
@@ -70,5 +100,6 @@ export function startTypingCorrection() {
 export function stopTypingCorrection() {
     DraftStore.removeChangeListener(onDraftChange);
     clearTimeout(timer);
+    applying = false;
     lastApplied = "";
 }
