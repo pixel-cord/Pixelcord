@@ -1,0 +1,112 @@
+/* ---- Popout panel ---- */
+
+.vc-focusmode-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 260px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--background-floating, #111214);
+    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / 35%));
+    border: 1px solid var(--background-modifier-accent, rgb(255 255 255 / 6%));
+}
+
+.vc-focusmode-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vc-focusmode-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--header-primary, #f2f3f5);
+}
+
+.vc-focusmode-badge {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--brand-500, #5865f2);
+    border-radius: 6px;
+    padding: 2px 9px;
+}
+
+.vc-focusmode-hint {
+    font-size: 12px;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-focusmode-presets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vc-focusmode-preset {
+    appearance: none;
+    border: 1px solid var(--background-modifier-accent, rgb(255 255 255 / 8%));
+    background: var(--background-secondary, #2b2d31);
+    color: var(--text-normal, #dbdee1);
+    border-radius: 9px;
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.vc-focusmode-preset:hover {
+    background: var(--brand-500, #5865f2);
+    border-color: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-focusmode-preset:active {
+    transform: scale(0.97);
+}
+
+.vc-focusmode-stop {
+    appearance: none;
+    border: none;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+    border-radius: 9px;
+    padding: 11px 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.12s ease;
+}
+
+.vc-focusmode-stop:hover {
+    filter: brightness(1.1);
+}
+
+/* Pulse the header button while a session is running. */
+.vc-focusmode-btn-active {
+    color: var(--brand-500, #5865f2) !important;
+}
+
+/* ---- Active-session distraction hiding ---- */
+
+.vc-focusmode-hidebadges [class*="numberBadge"],
+.vc-focusmode-hidebadges [class*="lowerBadge"],
+.vc-focusmode-hidebadges [class*="mentionsBar"] {
+    display: none !important;
+}
+
+.vc-focusmode-hidemembers [class*="membersWrap"] {
+    display: none !important;
+}
+
+.vc-focusmode-dimservers nav[class*="guilds"] {
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+}
+
+.vc-focusmode-dimservers nav[class*="guilds"]:hover {
+    opacity: 1;
+}
