@@ -17,16 +17,18 @@
 */
 
 import { readdirSync, writeFileSync } from "fs";
-import { getEntryPoint, isPluginFile, parseDevs, parseEquicordDevs, parseFile, PluginData } from "./utils";
+import { getEntryPoint, isPluginFile, parseDevs, parseEquicordDevs, parseFile, parsePixelCordDevs, PluginData } from "./utils";
 
 (async () => {
     parseDevs();
     parseEquicordDevs();
+    parsePixelCordDevs();
 
     const args = process.argv.slice(2);
 
     const equicordFlag = args.includes("--equicord");
     const vencordFlag = args.includes("--vencord");
+    const skipInvalid = args.includes("--skip-invalid");
 
     let dirs: string[];
 
@@ -35,7 +37,7 @@ import { getEntryPoint, isPluginFile, parseDevs, parseEquicordDevs, parseFile, P
     } else if (vencordFlag) {
         dirs = ["src/plugins", "src/plugins/_core"];
     } else {
-        dirs = ["src/plugins", "src/plugins/_core", "src/equicordplugins/_core", "src/equicordplugins"];
+        dirs = ["src/plugins", "src/plugins/_core", "src/equicordplugins/_core", "src/equicordplugins", "src/pixelcordplugins"];
     }
 
     const outputPath = args.find(a => !a.startsWith("--")) ?? null;
@@ -47,8 +49,13 @@ import { getEntryPoint, isPluginFile, parseDevs, parseEquicordDevs, parseFile, P
             readdirSync(dir, { withFileTypes: true })
                 .filter(isPluginFile)
                 .map(async dirent => {
-                    const [data] = await parseFile(await getEntryPoint(dir, dirent));
-                    plugins.sort().push(data);
+                    try {
+                        const [data] = await parseFile(await getEntryPoint(dir, dirent));
+                        plugins.push(data);
+                    } catch (e) {
+                        if (!skipInvalid) throw e;
+                        console.warn(`Skipping ${dir}/${dirent.name}: ${(e as Error).message}`);
+                    }
                 })
         )
     );
