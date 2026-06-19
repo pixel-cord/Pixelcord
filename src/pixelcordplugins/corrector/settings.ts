@@ -10,8 +10,13 @@ import { OptionType } from "@utils/types";
 export const settings = definePluginSettings({
     autoCorrect: {
         type: OptionType.BOOLEAN,
-        description: "Automatically fix your messages before sending",
+        description: "Automatically fix your draft while you type (pause to apply). The word you're still typing is left alone.",
         default: false
+    },
+    correctDelay: {
+        type: OptionType.NUMBER,
+        description: "How long (ms) to wait after you stop typing before correcting",
+        default: 1200
     },
     language: {
         type: OptionType.STRING,

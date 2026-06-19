@@ -60,25 +60,28 @@ async function rawCheck(baseUrl: string, text: string, language: string): Promis
     }
 }
 
-export async function correct(text: string): Promise<CorrectionValue> {
+// Returns null on any failure (no toast). Used by the while-typing path so a
+// rate-limited or offline service never spams the user.
+export async function correctSilent(text: string): Promise<CorrectionValue | null> {
     try {
         const { status, data } = await rawCheck(
             settings.store.apiBaseUrl || "https://api.languagetool.org",
             text,
             settings.store.language || "auto"
         );
-
-        if (status !== 200) {
-            const detail = typeof data === "string" ? data.slice(0, 200) : "";
-            throw new Error(status === -1
-                ? `Failed to reach the correction service. ${detail}`
-                : `Correction service error ${status}. ${detail}`);
-        }
-
+        if (status !== 200) return null;
         return applyMatches(text, JSON.parse(data).matches ?? []);
-    } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        showToast(message, Toasts.Type.FAILURE);
-        throw e instanceof Error ? e : new Error(message);
+    } catch {
+        return null;
     }
+}
+
+// On-demand correction (context menu / popover): surfaces failures via a toast.
+export async function correct(text: string): Promise<CorrectionValue> {
+    const result = await correctSilent(text);
+    if (!result) {
+        showToast("Correction failed — the service may be offline or rate-limited.", Toasts.Type.FAILURE);
+        throw new Error("correction failed");
+    }
+    return result;
 }

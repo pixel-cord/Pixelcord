@@ -13,8 +13,9 @@ import { Message } from "@vencord/discord-types";
 import { ChannelStore, Menu } from "@webpack/common";
 
 import { CorrectionAccessory, handleCorrection } from "./CorrectionAccessory";
-import { CorrectChatBarIcon, CorrectIcon, setShouldShowCorrectEnabledTooltip } from "./CorrectorIcon";
+import { CorrectChatBarIcon, CorrectIcon } from "./CorrectorIcon";
 import { settings } from "./settings";
+import { startTypingCorrection, stopTypingCorrection } from "./typing";
 import { correct } from "./utils";
 
 function getMessageContent(message: Message): string {
@@ -38,11 +39,9 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
     ));
 };
 
-let tooltipTimeout: any;
-
 export default definePlugin({
     name: "Corrector",
-    description: "Fix spelling and grammar in your messages with LanguageTool — auto-correct before sending or on demand.",
+    description: "Fix spelling and grammar in your messages with LanguageTool — auto-correct as you type or on demand.",
     dependencies: ["ChatInputButtonAPI", "MessageAccessoriesAPI", "MessagePopoverAPI"],
     tags: ["Chat", "Utility"],
     authors: [PixelCordDevs.myvings],
@@ -78,15 +77,11 @@ export default definePlugin({
         }
     },
 
-    async onBeforeMessageSend(_, message) {
-        if (!settings.store.autoCorrect) return;
-        if (!message.content) return;
+    start() {
+        startTypingCorrection();
+    },
 
-        setShouldShowCorrectEnabledTooltip?.(true);
-        clearTimeout(tooltipTimeout);
-        tooltipTimeout = setTimeout(() => setShouldShowCorrectEnabledTooltip?.(false), 2000);
-
-        const { text } = await correct(message.content);
-        message.content = text;
+    stop() {
+        stopTypingCorrection();
     }
 });
