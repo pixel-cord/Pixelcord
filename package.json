@@ -1,7 +1,7 @@
 {
     "name": "pixelcord",
     "private": "true",
-    "version": "1.14.13.3",
+    "version": "1.14.15",
     "description": "A Discord client mod, forked from Equicord",
     "homepage": "https://github.com/pixel-cord/Pixelcord#readme",
     "bugs": {
