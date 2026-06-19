@@ -37,6 +37,11 @@ const notifySubscribers = () => subscribers.forEach(fn => fn());
 // hook survives channel switches and reconnects automatically.
 
 const HOOKED = Symbol.for("pixelcord.fakeMute.hooked");
+// The originals are stashed on the prototype too, so a hot-reloaded module (which
+// loses its module-level refs but sees proto[HOOKED] already set) can recover them
+// instead of leaving reconcile()/unhook() as no-ops with a broken setSelfMute.
+const ORIG_MUTE = Symbol.for("pixelcord.fakeMute.origSetSelfMute");
+const ORIG_DEAF = Symbol.for("pixelcord.fakeMute.origSetSelfDeaf");
 let hookedProto: any = null;
 let origSetSelfMute: ((this: any, mute: boolean) => void) | null = null;
 let origSetSelfDeaf: ((this: any, deaf: boolean) => void) | null = null;
@@ -55,10 +60,18 @@ function ensureHooked() {
     if (!conn) return;
 
     const proto = Object.getPrototypeOf(conn);
-    if (proto[HOOKED]) { hookedProto = proto; return; }
+    if (proto[HOOKED]) {
+        // Already hooked (likely a previous load) — recover the captured originals.
+        origSetSelfMute = proto[ORIG_MUTE] ?? null;
+        origSetSelfDeaf = proto[ORIG_DEAF] ?? null;
+        hookedProto = proto;
+        return;
+    }
 
     origSetSelfMute = proto.setSelfMute;
     origSetSelfDeaf = proto.setSelfDeaf;
+    proto[ORIG_MUTE] = origSetSelfMute;
+    proto[ORIG_DEAF] = origSetSelfDeaf;
 
     proto.setSelfMute = function (mute: boolean) {
         return origSetSelfMute!.call(this, fakeMode ? false : mute);
@@ -73,9 +86,13 @@ function ensureHooked() {
 
 function unhook() {
     if (!hookedProto) return;
-    if (origSetSelfMute) hookedProto.setSelfMute = origSetSelfMute;
-    if (origSetSelfDeaf) hookedProto.setSelfDeaf = origSetSelfDeaf;
+    const origMute = origSetSelfMute ?? hookedProto[ORIG_MUTE];
+    const origDeaf = origSetSelfDeaf ?? hookedProto[ORIG_DEAF];
+    if (origMute) hookedProto.setSelfMute = origMute;
+    if (origDeaf) hookedProto.setSelfDeaf = origDeaf;
     delete hookedProto[HOOKED];
+    delete hookedProto[ORIG_MUTE];
+    delete hookedProto[ORIG_DEAF];
     hookedProto = null;
     origSetSelfMute = origSetSelfDeaf = null;
 }
