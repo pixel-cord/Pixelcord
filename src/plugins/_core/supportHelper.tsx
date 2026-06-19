@@ -146,7 +146,7 @@ async function generateDebugInfoMessage() {
 
     const info = {
         Pixelcord:
-            `v${VERSION} • [${gitHashShort}](<https://github.com/pixel-cord/pixelcord/commit/${gitHash}>)` +
+            `v${VERSION} • [${gitHashShort}](<https://github.com/pixel-cord/Pixelcord/commit/${gitHash}>)` +
             `${IS_EQUIBOP ? "" : SettingsPlugin.getVersionInfo()} - ${Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(BUILD_TIMESTAMP)}`,
         Client: `${RELEASE_CHANNEL} ~ ${clientString}`,
         Platform: platformDisplay

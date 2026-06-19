@@ -50,7 +50,7 @@ export const useAuthorizationStore = proxyLazy(() => zustandCreate(
             async authorize() {
                 if (!CLIENT_ID) await loadApiConfig();
                 if (!CLIENT_ID) {
-                    showToast("Could not reach the PixelCord API. Is the backend running?", Toasts.Type.FAILURE);
+                    showToast("Could not reach the Pixelcord API. Is the backend running?", Toasts.Type.FAILURE);
                     return;
                 }
 

@@ -171,10 +171,10 @@ function DonateModal({ modalProps }: { modalProps: RenderModalProps; }) {
 
     if (!token) {
         return (
-            <Modal {...modalProps} size="sm" title="Apoiar o PixelCord">
+            <Modal {...modalProps} size="sm" title="Apoiar o Pixelcord">
                 <div className={cl("body")}>
                     <p className={cl("intro")}>
-                        Pra registrar e mostrar suas doações, entre com sua conta do Discord. É o mesmo login que o PixelCord já usa. 💜
+                        Pra registrar e mostrar suas doações, entre com sua conta do Discord. É o mesmo login que o Pixelcord já usa. 💜
                     </p>
                     <Button color={Button.Colors.BRAND} className={cl("submit")} onClick={login}>
                         Entrar com Discord
@@ -185,12 +185,12 @@ function DonateModal({ modalProps }: { modalProps: RenderModalProps; }) {
     }
 
     return (
-        <Modal {...modalProps} size="sm" title="Apoiar o PixelCord">
+        <Modal {...modalProps} size="sm" title="Apoiar o Pixelcord">
             <div className={cl("body")}>
                 {!result ? (
                     <>
                         <p className={cl("intro")}>
-                            Sua doação ajuda no desenvolvimento do PixelCord — via PIX ou Litecoin. Cada R$ 10,00 dá direito a 1 Custom Badge. 💜
+                            Sua doação ajuda no desenvolvimento do Pixelcord — via PIX ou Litecoin. Cada R$ 10,00 dá direito a 1 Custom Badge. 💜
                         </p>
 
                         <HeadingTertiary className={cl("label")}>Método</HeadingTertiary>
@@ -260,7 +260,7 @@ function DonateModal({ modalProps }: { modalProps: RenderModalProps; }) {
                     <div className={cl("done")}>
                         <div className={cl("check")}>✓</div>
                         <HeadingTertiary>Pagamento confirmado!</HeadingTertiary>
-                        <p>Muito obrigado pelo apoio ao PixelCord. 💜</p>
+                        <p>Muito obrigado pelo apoio ao Pixelcord. 💜</p>
                         <Button color={Button.Colors.BRAND} onClick={() => { setResult(null); setStatus(null); }}>
                             Voltar
                         </Button>

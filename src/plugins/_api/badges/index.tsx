@@ -65,7 +65,7 @@ const EquicordContributorBadge: ProfileBadge = {
 
 const PixelCordContributorBadge: ProfileBadge = {
     id: "pixelcord_contributor_badge",
-    description: "PixelCord Contributor",
+    description: "Pixelcord Contributor",
     iconSrc: PIXELCORD_CONTRIBUTOR_BADGE,
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowPixelCordContributorBadge(userId),
@@ -126,8 +126,8 @@ let intervalId: any;
 let versionIntervalId: any;
 let lastBadgesVersion: number | null = null;
 
-// Rotating cache: poll the lightweight version counter; when PixelCord badges change
-// (approve / remove / edit), refetch just the PixelCord feed so the change shows fast.
+// Rotating cache: poll the lightweight version counter; when Pixelcord badges change
+// (approve / remove / edit), refetch just the Pixelcord feed so the change shows fast.
 async function pollPixelCordBadgesVersion() {
     try {
         const { version } = await fetch(PIXELCORD_BADGES_VERSION_URL).then(r => r.json());
@@ -266,7 +266,7 @@ export default definePlugin({
     filterBadges(profile: { userId?: string; } | null, badges: { id: string; }[]) {
         const userId = profile?.userId;
         // Always apply the global hidden set: a badge a user hid must disappear for
-        // EVERYONE on PixelCord, not just viewers who enabled the HideBadges plugin.
+        // EVERYONE on Pixelcord, not just viewers who enabled the HideBadges plugin.
         if (!Array.isArray(badges) || !userId) return badges;
 
         const hidden = hideBadges.getHiddenBadges(userId);

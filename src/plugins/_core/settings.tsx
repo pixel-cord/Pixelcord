@@ -191,8 +191,8 @@ export default definePlugin({
         const equicordEntries: SettingsLayoutNode[] = [
             buildEntry({
                 key: "equicord_main",
-                title: "PixelCord",
-                panelTitle: "PixelCord Settings",
+                title: "Pixelcord",
+                panelTitle: "Pixelcord Settings",
                 Component: VencordTab,
                 Icon: MainSettingsIcon
             }),
@@ -217,14 +217,14 @@ export default definePlugin({
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
                 key: "equicord_updater",
                 title: "Updater",
-                panelTitle: "PixelCord Updater",
+                panelTitle: "Pixelcord Updater",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
                 key: "equicord_cloud",
                 title: "Cloud",
-                panelTitle: "PixelCord Cloud",
+                panelTitle: "Pixelcord Cloud",
                 Component: CloudTab,
                 Icon: CloudIcon
             }),
@@ -246,7 +246,7 @@ export default definePlugin({
         const equicordSection: SettingsLayoutNode = {
             key: "equicord_section",
             type: LayoutTypes.SECTION,
-            useTitle: () => "PixelCord Settings",
+            useTitle: () => "Pixelcord Settings",
             buildLayout: () => equicordEntries
         };
 
