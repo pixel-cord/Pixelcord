@@ -12,7 +12,7 @@ permissions:
 
 jobs:
     Build:
-        name: Build Equicord
+        name: Build Pixelcord
         runs-on: ubuntu-latest
 
         steps:
@@ -68,7 +68,7 @@ jobs:
               id: date
               run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
-            - name: Upload Equicord Stable
+            - name: Upload Pixelcord Stable
               if: ${{ vars.ACT == 'false' }}
               run: |
                   gh release create ${{ steps.date.outputs.date }} --latest=false
