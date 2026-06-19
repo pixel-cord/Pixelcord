@@ -94,6 +94,9 @@ export default definePlugin({
     name: "MoreConnections",
     description: "Add extra profile connections (like Instagram) that show for everyone using Pixelcord.",
     authors: [PixelCordDevs.myvings],
+    // On by default so every Pixelcord user renders others' connections without
+    // having to enable anything (a viewer must run the plugin to see them).
+    enabledByDefault: true,
     settings,
 
     flux: {

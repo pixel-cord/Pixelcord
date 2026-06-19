@@ -56,7 +56,7 @@ export function InviteButton({
             type="button"
             onClick={async e => {
                 e.preventDefault();
-                openInviteModal("wKgT9j2xfN").catch(() =>
+                openInviteModal("td23g2jaF4").catch(() =>
                     showToast("Invalid or expired invite"),
                 );
             }}
