@@ -4,11 +4,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { findByPropsLazy } from "@webpack";
 import { DraftStore, DraftType, SelectedChannelStore } from "@webpack/common";
 
 import { setShouldShowCorrectEnabledTooltip } from "./CorrectorIcon";
 import { settings } from "./settings";
 import { correctSilent } from "./utils";
+
+// Slate's own editor API — the only thing the chat input reliably honours.
+const Transforms = findByPropsLazy("insertNodes", "textToText");
+const SlateEditor = findByPropsLazy("start", "end", "toSlateRange");
+
+// The chat input's editor ref, captured by the patch in index.tsx.
+let editorRef: any = null;
+export function setEditorRef(ref: any) {
+    editorRef = ref;
+}
 
 let timer: any;
 // True while we're writing our own correction, so the draft change it produces
@@ -21,21 +32,22 @@ function getDraft(channelId: string): string {
     return DraftStore.getDraft(channelId, DraftType.ChannelMessage) ?? "";
 }
 
-// Replace the WHOLE chat input. CLEAR_TEXT and the DOM-Selection + INSERT_TEXT
-// combo both just appended (Slate ignores a programmatic DOM selection). Go
-// through the native contenteditable editing commands instead: execCommand fires
-// the `beforeinput` events Slate actually listens to, so selectAll + insertText
-// replaces the content. Returns false if it couldn't run, so we never append.
+// Replace the WHOLE chat input through Slate's own editor API. Every DOM-level
+// approach (CLEAR_TEXT, DOM-Selection + INSERT_TEXT, execCommand) just appended,
+// because Slate keeps its own model and ignores them. Selecting the full document
+// and inserting over it deletes the old content and inserts the new — a true
+// replace. Returns false if the editor isn't available, so we never append.
 function setChatInput(text: string): boolean {
-    let editor = document.activeElement as HTMLElement | null;
-    if (!editor?.matches?.('[data-slate-editor="true"]'))
-        editor = document.querySelector<HTMLElement>('[data-slate-editor="true"]');
+    const editor = editorRef?.current?.getSlateEditor?.();
     if (!editor) return false;
 
-    editor.focus();
     try {
-        document.execCommand("selectAll", false);
-        return document.execCommand("insertText", false, text);
+        Transforms.select(editor, {
+            anchor: SlateEditor.start(editor, []),
+            focus: SlateEditor.end(editor, [])
+        });
+        Transforms.insertText(editor, text);
+        return true;
     } catch {
         return false;
     }

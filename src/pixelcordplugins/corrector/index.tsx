@@ -15,7 +15,7 @@ import { ChannelStore, Menu } from "@webpack/common";
 import { CorrectionAccessory, handleCorrection } from "./CorrectionAccessory";
 import { CorrectChatBarIcon, CorrectIcon } from "./CorrectorIcon";
 import { settings } from "./settings";
-import { startTypingCorrection, stopTypingCorrection } from "./typing";
+import { setEditorRef, startTypingCorrection, stopTypingCorrection } from "./typing";
 import { correct } from "./utils";
 
 function getMessageContent(message: Message): string {
@@ -46,6 +46,24 @@ export default definePlugin({
     tags: ["Chat", "Utility"],
     authors: [PixelCordDevs.myvings],
     settings,
+
+    // Capture the chat input's editor ref so typing-correction can replace the
+    // draft through Slate's own API. Zero-width insert after CharacterCounter's
+    // anchor, so the two coexist (core plugins patch first).
+    patches: [
+        {
+            find: ".CREATE_FORUM_POST||",
+            replacement: {
+                match: /(?<=,editorRef:(\i),.{0,200}channelId:\i\.id\}\))/,
+                replace: ",$self.captureEditorRef($1)"
+            }
+        }
+    ],
+
+    captureEditorRef(ref: any) {
+        setEditorRef(ref);
+        return null;
+    },
 
     contextMenus: {
         "message": messageCtxPatch
