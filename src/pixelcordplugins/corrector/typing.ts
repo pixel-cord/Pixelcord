@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { insertTextIntoChatInputBox } from "@utils/discord";
 import { DraftStore, DraftType, SelectedChannelStore } from "@webpack/common";
 
 import { setShouldShowCorrectEnabledTooltip } from "./CorrectorIcon";
@@ -22,27 +21,24 @@ function getDraft(channelId: string): string {
     return DraftStore.getDraft(channelId, DraftType.ChannelMessage) ?? "";
 }
 
-// Replace the WHOLE chat input. CLEAR_TEXT proved unreliable (it left the old
-// text in place, so insert just appended). Instead select all of the Slate
-// editor's contents and insert over the selection — INSERT_TEXT replaces a
-// non-collapsed selection.
-function setChatInput(text: string) {
+// Replace the WHOLE chat input. CLEAR_TEXT and the DOM-Selection + INSERT_TEXT
+// combo both just appended (Slate ignores a programmatic DOM selection). Go
+// through the native contenteditable editing commands instead: execCommand fires
+// the `beforeinput` events Slate actually listens to, so selectAll + insertText
+// replaces the content. Returns false if it couldn't run, so we never append.
+function setChatInput(text: string): boolean {
     let editor = document.activeElement as HTMLElement | null;
     if (!editor?.matches?.('[data-slate-editor="true"]'))
         editor = document.querySelector<HTMLElement>('[data-slate-editor="true"]');
+    if (!editor) return false;
 
-    if (editor) {
-        editor.focus();
-        const sel = window.getSelection();
-        if (sel) {
-            const range = document.createRange();
-            range.selectNodeContents(editor);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
+    editor.focus();
+    try {
+        document.execCommand("selectAll", false);
+        return document.execCommand("insertText", false, text);
+    } catch {
+        return false;
     }
-
-    insertTextIntoChatInputBox(text);
 }
 
 function onDraftChange() {
@@ -80,14 +76,17 @@ async function runCorrection() {
     if (SelectedChannelStore.getChannelId() !== channelId) return;
     if (getDraft(channelId) !== text) return;
 
-    lastApplied = corrected;
     applying = true;
+    let ok = false;
     try {
-        setChatInput(corrected);
+        ok = setChatInput(corrected);
     } finally {
         // Let the draft-change events from our own write settle before re-listening.
         setTimeout(() => { applying = false; }, 250);
     }
+
+    if (!ok) return;
+    lastApplied = corrected;
 
     setShouldShowCorrectEnabledTooltip?.(true);
     setTimeout(() => setShouldShowCorrectEnabledTooltip?.(false), 2000);
