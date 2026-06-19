@@ -18,7 +18,7 @@ export const settings = definePluginSettings({
     },
     hideMembersList: {
         type: OptionType.BOOLEAN,
-        description: "Hide the members sidebar while focusing",
+        description: "Hide the members sidebar and the 'Active Now' panel while focusing",
         default: true,
         onChange: reapplyFeatures
     },
