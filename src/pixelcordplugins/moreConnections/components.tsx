@@ -4,12 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
-import { Flex } from "@components/Flex";
 import { Paragraph } from "@components/Paragraph";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Button, Modal, openModal, showToast, TextInput, Toasts, Tooltip, useEffect, UserStore, useState } from "@webpack/common";
+import { Button, Modal, openModal, showToast, TextInput, Toasts, useEffect, UserStore, useState } from "@webpack/common";
 
 import { Connections, getMyConnections, setMyConnections } from "./lib/api";
 import { useAuthorizationStore } from "./lib/auth";
@@ -94,48 +92,3 @@ export function SettingsComponent() {
         </div>
     );
 }
-
-// ---------------------------------------------------------------------------
-// Profile popout — renders a user's custom connections as clickable chips.
-// ---------------------------------------------------------------------------
-
-function ConnectionsProfile({ id }: { id: string; }) {
-    const connections = useUsersConnectionsStore((s: any) => s.users.get(id)?.connections) as Connections | undefined;
-
-    useEffect(() => {
-        useUsersConnectionsStore.getState().request(id);
-    }, [id]);
-
-    if (!connections) return null;
-
-    const entries = PLATFORMS
-        .map(p => [p, connections[p.id]] as const)
-        .filter(([, value]) => !!value);
-
-    if (!entries.length) return null;
-
-    return (
-        <Flex gap={8} flexWrap="wrap" style={{ marginTop: 8 }}>
-            {entries.map(([platform, value]) => (
-                <Tooltip key={platform.id} text={`${platform.name}: ${value}`}>
-                    {tooltipProps => (
-                        <a
-                            {...tooltipProps}
-                            href={platform.profileUrl(value)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
-                        >
-                            <platform.Icon size={32} />
-                        </a>
-                    )}
-                </Tooltip>
-            ))}
-        </Flex>
-    );
-}
-
-export const profileConnectionsComponent = ErrorBoundary.wrap(
-    (props: { user?: { id: string; }; }) => props.user ? <ConnectionsProfile id={props.user.id} /> : null,
-    { noop: true }
-);
