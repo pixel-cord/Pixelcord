@@ -8,16 +8,18 @@ import { definePluginSettings } from "@api/Settings";
 import { UserAreaButton, UserAreaRenderProps } from "@api/UserArea";
 import { PixelCordDevs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { MediaEngineStore, showToast, useEffect, useState, VoiceActions } from "@webpack/common";
+import { MediaEngineStore, showToast, useEffect, useState } from "@webpack/common";
 
-// Whether we're currently faking a muted mic. Exported so the patched
-// voiceStateUpdate can read it through $self.muteValue.
-export let fakeMuted = false;
+// Master switch. While ON, the local mic keeps transmitting and remote audio
+// keeps playing even though Discord's own mute/deafen buttons report muted /
+// deafened to the server. The feature is driven entirely by the *normal* mute
+// and deafen buttons — this plugin only suppresses the local media gating.
+let fakeMode = false;
 
 const settings = definePluginSettings({
     notify: {
         type: OptionType.BOOLEAN,
-        description: "Show a toast when toggling",
+        description: "Show a toast when toggling fake mode",
         default: true
     }
 });
@@ -26,39 +28,89 @@ const settings = definePluginSettings({
 const subscribers = new Set<() => void>();
 const notifySubscribers = () => subscribers.forEach(fn => fn());
 
-// A voiceStateUpdate is only emitted when the local mute/deaf state changes, and
-// that update is what carries our patched self_mute flag to the server. So we
-// flip self-mute (reading isSelfMute) to (re)apply our state without leaving the
-// user stuck muted.
+// --- connection prototype hook -------------------------------------------
+// Discord applies your self-mute / self-deafen to the WebRTC layer via
+// MediaEngineConnection.setSelfMute(mute) / setSelfDeaf(deaf). We wrap those on
+// the *prototype* so that, while fakeMode is on, the connection is always told
+// "not muted / not deafened" — keeping your media live — no matter what the UI
+// and the server believe. Patching the prototype (not an instance) means the
+// hook survives channel switches and reconnects automatically.
 
-function enableFakeMute() {
-    fakeMuted = true;
+const HOOKED = Symbol.for("pixelcord.fakeMute.hooked");
+let hookedProto: any = null;
+let origSetSelfMute: ((this: any, mute: boolean) => void) | null = null;
+let origSetSelfDeaf: ((this: any, deaf: boolean) => void) | null = null;
 
-    // Always end UNMUTED locally (mic live) while the patch reports muted.
-    if (MediaEngineStore.isSelfMute()) {
-        VoiceActions.toggleSelfMute();
-    } else {
-        VoiceActions.toggleSelfMute();
-        setTimeout(() => VoiceActions.toggleSelfMute(), 300);
+function getConnections(): any[] {
+    const engine = MediaEngineStore.getMediaEngine?.();
+    const set = engine?.connections;
+    return set ? [...set] : [];
+}
+
+// Patch the connection prototype once, as soon as any connection exists.
+function ensureHooked() {
+    if (hookedProto) return;
+
+    const conn = getConnections()[0];
+    if (!conn) return;
+
+    const proto = Object.getPrototypeOf(conn);
+    if (proto[HOOKED]) { hookedProto = proto; return; }
+
+    origSetSelfMute = proto.setSelfMute;
+    origSetSelfDeaf = proto.setSelfDeaf;
+
+    proto.setSelfMute = function (mute: boolean) {
+        return origSetSelfMute!.call(this, fakeMode ? false : mute);
+    };
+    proto.setSelfDeaf = function (deaf: boolean) {
+        return origSetSelfDeaf!.call(this, fakeMode ? false : deaf);
+    };
+
+    proto[HOOKED] = true;
+    hookedProto = proto;
+}
+
+function unhook() {
+    if (!hookedProto) return;
+    if (origSetSelfMute) hookedProto.setSelfMute = origSetSelfMute;
+    if (origSetSelfDeaf) hookedProto.setSelfDeaf = origSetSelfDeaf;
+    delete hookedProto[HOOKED];
+    hookedProto = null;
+    origSetSelfMute = origSetSelfDeaf = null;
+}
+
+// Force live connection(s) to match what we want *right now*, bypassing the
+// fakeMode gate via the originals: when enabling we re-open media that the
+// buttons may already have cut; when disabling we restore the real state so the
+// WebRTC layer matches the buttons again.
+function reconcile() {
+    for (const conn of getConnections()) {
+        origSetSelfMute?.call(conn, fakeMode ? false : MediaEngineStore.isSelfMute());
+        origSetSelfDeaf?.call(conn, fakeMode ? false : MediaEngineStore.isSelfDeaf());
     }
 }
 
-function disableFakeMute() {
-    fakeMuted = false;
-
-    // Net-zero toggle: same local state, but emits a voiceStateUpdate so the
-    // server resyncs to our real (now un-patched) self_mute.
-    VoiceActions.toggleSelfMute();
-    setTimeout(() => VoiceActions.toggleSelfMute(), 300);
-}
-
-function toggleFakeMute() {
-    if (fakeMuted) disableFakeMute();
-    else enableFakeMute();
+function setFakeMode(on: boolean) {
+    fakeMode = on;
+    ensureHooked();
+    reconcile();
 
     notifySubscribers();
     if (settings.store.notify)
-        showToast(fakeMuted ? "🔇 Fake mute: ON — others see you muted." : "🎙️ Fake mute: OFF");
+        showToast(on
+            ? "🫥 Fake mode: ON — mute/deafen now lie to everyone."
+            : "🎙️ Fake mode: OFF");
+}
+
+const toggleFakeMode = () => setFakeMode(!fakeMode);
+
+// If fake mode is on, a fresh connection (just joined / reconnected) may have
+// come up muted or deafened before the prototype was patched — re-open it.
+function onMediaChange() {
+    if (!fakeMode) return;
+    ensureHooked();
+    reconcile();
 }
 
 function FakeMuteIcon({ className }: { className?: string; }) {
@@ -72,10 +124,10 @@ function FakeMuteIcon({ className }: { className?: string; }) {
 }
 
 function FakeMuteButton({ iconForeground, hideTooltips }: UserAreaRenderProps) {
-    const [active, setActive] = useState(fakeMuted);
+    const [active, setActive] = useState(fakeMode);
 
     useEffect(() => {
-        const onChange = () => setActive(fakeMuted);
+        const onChange = () => setActive(fakeMode);
         subscribers.add(onChange);
         return () => void subscribers.delete(onChange);
     }, []);
@@ -84,31 +136,20 @@ function FakeMuteButton({ iconForeground, hideTooltips }: UserAreaRenderProps) {
         <UserAreaButton
             role="switch"
             aria-checked={active}
-            aria-label="Fake Mute"
-            tooltipText={hideTooltips ? undefined : (active ? "Fake Mute: on" : "Fake Mute")}
+            aria-label="Fake Mode"
+            tooltipText={hideTooltips ? undefined : (active ? "Fake mute/deafen: on" : "Fake mute/deafen")}
             redGlow={active}
             icon={<FakeMuteIcon className={iconForeground} />}
-            onClick={toggleFakeMute}
+            onClick={toggleFakeMode}
         />
     );
 }
 
 export default definePlugin({
     name: "FakeMute",
-    description: "Appear muted to everyone while your mic keeps transmitting. Toggle from the voice panel button.",
+    description: "Master toggle for a fake mute/deafen: turn it on, then use Discord's normal mute & deafen buttons — others see you muted/deafened while your mic keeps transmitting and you keep hearing.",
     authors: [PixelCordDevs.myvings],
     settings,
-
-    patches: [
-        {
-            find: "}voiceStateUpdate(",
-            replacement: {
-                // Only override self_mute; leave self_deaf and self_video untouched.
-                match: /self_mute:([^,]+),self_deaf:([^,]+),self_video:([^,]+)/,
-                replace: "self_mute:$self.muteValue($1),self_deaf:$2,self_video:$3"
-            }
-        }
-    ],
 
     userAreaButton: {
         icon: FakeMuteIcon,
@@ -116,15 +157,17 @@ export default definePlugin({
         priority: 0
     },
 
-    // Called from the patched voiceStateUpdate: report muted while faking.
-    muteValue: (realMute: boolean) => (fakeMuted ? true : realMute),
+    start() {
+        MediaEngineStore.addChangeListener(onMediaChange);
+    },
 
-    // Don't leave the server thinking we're muted if the plugin is disabled
-    // while fake mute is active.
+    // Restore the real mute/deafen state to the connection and remove the hook,
+    // so disabling the plugin never leaves you secretly transmitting.
     stop() {
-        if (fakeMuted) {
-            disableFakeMute();
-            notifySubscribers();
-        }
+        MediaEngineStore.removeChangeListener(onMediaChange);
+        fakeMode = false;
+        reconcile();
+        unhook();
+        notifySubscribers();
     }
 });
