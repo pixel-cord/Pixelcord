@@ -241,5 +241,7 @@ await Promise.all([
 
 await Promise.all([
     createPackage("dist/desktop", "dist/desktop.asar"),
-    createPackage("dist/equibop", "dist/equibop.asar"),
+    // Source dir stays dist/equibop (internal Equibop-derived structure), but the
+    // released asset is our own name: pixeltop.asar (consumed by the Pixeltop app).
+    createPackage("dist/equibop", "dist/pixeltop.asar"),
 ]);
