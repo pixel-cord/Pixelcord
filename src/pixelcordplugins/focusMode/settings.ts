@@ -7,22 +7,26 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
+import { reapplyFeatures } from "./store";
+
 export const settings = definePluginSettings({
     hideUnreadBadges: {
         type: OptionType.BOOLEAN,
         description: "Hide red unread/mention badges while focusing",
         default: true,
-        restartNeeded: false
+        onChange: reapplyFeatures
     },
     hideMembersList: {
         type: OptionType.BOOLEAN,
         description: "Hide the members sidebar while focusing",
-        default: true
+        default: true,
+        onChange: reapplyFeatures
     },
     dimServerList: {
         type: OptionType.BOOLEAN,
         description: "Dim the server list so it stops pulling your eyes",
-        default: true
+        default: true,
+        onChange: reapplyFeatures
     },
     notifyOnEnd: {
         type: OptionType.BOOLEAN,

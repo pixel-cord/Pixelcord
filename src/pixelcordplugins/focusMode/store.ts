@@ -69,11 +69,12 @@ export const useFocusStore = proxyLazy(() => zustandCreate((set: any, get: any):
     }
 })));
 
-/** Cleanly removes the body class when the plugin is disabled. */
+/** Reapplies the feature classes when a setting is toggled mid-session. */
+export function reapplyFeatures() {
+    if (useFocusStore.getState().active) applyBodyClass(true);
+}
+
+/** Fully ends any session and clears state when the plugin is disabled. */
 export function resetFocus() {
-    if (endTimer) {
-        clearTimeout(endTimer);
-        endTimer = null;
-    }
-    document.body.classList.remove(BODY_CLASS, ...Object.keys(FEATURE_CLASSES));
+    useFocusStore.getState().stop();
 }

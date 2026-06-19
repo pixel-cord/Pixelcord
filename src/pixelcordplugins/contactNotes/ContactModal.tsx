@@ -130,6 +130,7 @@ function ContactDialog({ user, modalProps }: { user: User; modalProps: RenderMod
                             type="datetime-local"
                             className={cl("datetime")}
                             value={customAt}
+                            max="9999-12-31T23:59"
                             onChange={e => setCustomAt(e.currentTarget.value)}
                         />
                     )}
