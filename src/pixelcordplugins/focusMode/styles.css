@@ -98,15 +98,17 @@
     display: none !important;
 }
 
-.vc-focusmode-hidemembers [class*="membersWrap"] {
+/* Members sidebar (the class is "members_<hash>", not "membersWrap") plus the
+   "Active Now" people column on the Friends page. */
+.vc-focusmode-hidemembers [class*="membersWrap"],
+.vc-focusmode-hidemembers [class*="members_"],
+.vc-focusmode-hidemembers [class*="nowPlayingColumn"] {
     display: none !important;
 }
 
+/* Persistently dim the server list while focusing — no hover revert, so the
+   session is clearly "on" instead of snapping back the moment you move. */
 .vc-focusmode-dimservers nav[class*="guilds"] {
-    opacity: 0.35;
+    opacity: 0.4;
     transition: opacity 0.2s ease;
-}
-
-.vc-focusmode-dimservers nav[class*="guilds"]:hover {
-    opacity: 1;
 }
