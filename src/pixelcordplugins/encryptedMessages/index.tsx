@@ -12,6 +12,7 @@ import { PixelCordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { classes } from "@utils/misc";
 import definePlugin, { IconComponent } from "@utils/types";
+import { showToast } from "@webpack/common";
 
 import { decrypt, encrypt } from "./crypto";
 import { openKeyModal } from "./KeyModal";
@@ -19,9 +20,9 @@ import { settings } from "./settings";
 
 const cl = classNameFactory("vc-encmsg-");
 
-// Prefix that marks an encrypted message; the rest is base64 ciphertext.
-const MARKER = "🔐";
-const DECRYPTED_PREFIX = "🔓 ";
+// Invisible (zero-width) prefix marking an encrypted message; the rest is base64
+// ciphertext. No visible lock is added to the message.
+const MARKER = "\u200b\u200c";
 
 const KeyIcon: IconComponent = ({ height = 20, width = 20, className }) => (
     <svg viewBox="0 0 24 24" height={height} width={width} className={className} fill="currentColor" aria-hidden>
@@ -36,8 +37,13 @@ const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
     const active = enabled && !!key;
     return (
         <ChatBarButton
-            tooltip={active ? "Encryption: ON" : "Encrypted messages"}
+            tooltip={active ? "Encryption: ON (right-click to toggle)" : "Encrypted messages (right-click to toggle)"}
             onClick={() => openKeyModal()}
+            onContextMenu={() => {
+                const next = !settings.store.enabled;
+                settings.store.enabled = next;
+                showToast(next ? "🔒 Encryption on" : "Encryption off");
+            }}
             buttonProps={{ "aria-haspopup": "dialog" }}
         >
             <KeyIcon className={classes(cl("icon"), active && cl("active"))} />
@@ -52,7 +58,7 @@ async function tryDecrypt(message: any) {
     const plain = await decrypt(message.content.slice(MARKER.length), key);
     if (plain == null) return; // wrong key / unreadable
 
-    updateMessage(message.channel_id, message.id, { content: DECRYPTED_PREFIX + plain });
+    updateMessage(message.channel_id, message.id, { content: plain });
 }
 
 export default definePlugin({

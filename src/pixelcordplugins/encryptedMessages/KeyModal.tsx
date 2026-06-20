@@ -18,7 +18,7 @@ function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
     const [input, setInput] = useState(key);
 
     return (
-        <Modal {...modalProps} size="small" title="Encrypted messages">
+        <Modal {...modalProps} size="sm" title="Encrypted messages">
             <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Paragraph>Encrypt my messages</Paragraph>
