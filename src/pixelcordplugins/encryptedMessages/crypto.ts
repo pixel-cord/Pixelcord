@@ -69,3 +69,27 @@ export async function decrypt(b64: string, passphrase: string): Promise<string |
         return null;
     }
 }
+
+// Older format: base64(salt[16] + iv[12] + ciphertext), key derived per-message
+// from the salt. Kept so messages encrypted before the format change still decrypt.
+export async function decryptLegacy(b64: string, passphrase: string): Promise<string | null> {
+    try {
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        if (raw.length < 16 + 12 + 16) return null;
+        const salt = raw.slice(0, 16);
+        const iv = raw.slice(16, 28);
+        const cipher = raw.slice(28);
+        const baseKey = await crypto.subtle.importKey("raw", textEncoder.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+        const key = await crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+            baseKey,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["decrypt"]
+        );
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher);
+        return textDecoder.decode(plain);
+    } catch {
+        return null;
+    }
+}
