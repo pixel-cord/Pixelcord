@@ -96,28 +96,35 @@ export function installNativeConnections() {
         registry.get = (type: string, ...rest: any[]) => (type === "lastfm" ? lastfm : origGet(type, ...rest));
         restore.push(() => { registry.get = origGet; });
 
-        // 4) Add it to whatever container the modal iterates for its platform list.
-        let added = false;
-        for (const key of Object.getOwnPropertyNames(registry)) {
-            let v: any;
-            try { v = registry[key]; } catch { continue; }
-            if (v instanceof Map && v.has("instagram")) {
-                v.set("lastfm", lastfm);
-                restore.push(() => v.delete("lastfm"));
-                added = true; break;
+        // 4) The platform list lives in a closure, reached only through the
+        // registry's own map/filter/find. Wrap them so Last.fm is included wherever
+        // it would qualify (e.g. the modal's "enabled & connectable" filter).
+        const accepts = (fn: any) => {
+            try { return !!fn(lastfm); } catch { return false; }
+        };
+        const wrap = (name: string, make: (orig: any) => any) => {
+            if (typeof registry[name] === "function") {
+                const orig = registry[name].bind(registry);
+                registry[name] = make(orig);
+                restore.push(() => { registry[name] = orig; });
             }
-            if (v && typeof v === "object" && !Array.isArray(v) && v.instagram?.type === "instagram") {
-                v.lastfm = lastfm;
-                restore.push(() => { delete v.lastfm; });
-                added = true; break;
+        };
+        wrap("filter", orig => (fn: any, ...rest: any[]) => {
+            const out = orig(fn, ...rest);
+            if (Array.isArray(out) && accepts(fn)) out.push(lastfm);
+            return out;
+        });
+        wrap("map", orig => (fn: any, ...rest: any[]) => {
+            const out = orig(fn, ...rest);
+            if (Array.isArray(out)) {
+                try {
+                    const mapped = fn(lastfm, out.length, []);
+                    if (mapped != null) out.push(mapped);
+                } catch { /* skip */ }
             }
-            if (Array.isArray(v) && v.some((p: any) => p?.type === "instagram")) {
-                v.push(lastfm);
-                restore.push(() => { const i = v.indexOf(lastfm); if (i >= 0) v.splice(i, 1); });
-                added = true; break;
-            }
-        }
-        logger.info("Last.fm added to modal list container:", added);
+            return out;
+        });
+        wrap("find", orig => (fn: any, ...rest: any[]) => orig(fn, ...rest) ?? (accepts(fn) ? lastfm : undefined));
 
         // 5) isSupported override for both.
         if (typeof registry.isSupported === "function") {
