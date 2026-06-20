@@ -14,7 +14,7 @@ import definePlugin, { IconComponent } from "@utils/types";
 import { showToast } from "@webpack/common";
 
 import { openKeyModal } from "./KeyModal";
-import { encryptContent, MARKER, tryDecrypt } from "./messages";
+import { encryptContent, tryDecrypt } from "./messages";
 import { settings } from "./settings";
 
 const cl = classNameFactory("vc-encmsg-");
@@ -66,7 +66,6 @@ export default definePlugin({
 
     async onBeforeMessageSend(_channelId, message) {
         if (!settings.store.enabled || !message.content) return;
-        if (message.content.startsWith(MARKER)) return;
         const encrypted = await encryptContent(message.content);
         if (encrypted) message.content = encrypted;
     }

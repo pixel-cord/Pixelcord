@@ -10,22 +10,24 @@ import { MessageStore, SelectedChannelStore } from "@webpack/common";
 import { decrypt, encrypt } from "./crypto";
 import { settings } from "./settings";
 
-// Invisible (zero-width) prefix marking an encrypted message; the rest is base64
-// ciphertext. No visible lock is added to the message.
-export const MARKER = "\u200b\u200c";
+// An encrypted message is just its base64 ciphertext — no marker. We only try to
+// decrypt content that looks like pure base64 of plausible length, so normal
+// messages are skipped cheaply.
+const LOOKS_BASE64 = /^[A-Za-z0-9+/]{32,}={0,2}$/;
 
 export async function encryptContent(text: string): Promise<string | null> {
     const { key } = settings.store;
     if (!key) return null;
-    return MARKER + await encrypt(text, key);
+    return encrypt(text, key);
 }
 
 export async function tryDecrypt(message: any) {
     const { key } = settings.store;
-    if (!key || typeof message?.content !== "string" || !message.content.startsWith(MARKER)) return;
+    const content = message?.content;
+    if (!key || typeof content !== "string" || !LOOKS_BASE64.test(content)) return;
 
-    const plain = await decrypt(message.content.slice(MARKER.length), key);
-    if (plain == null) return; // wrong key / unreadable
+    const plain = await decrypt(content, key);
+    if (plain == null) return; // not our ciphertext / wrong key
 
     updateMessage(message.channel_id, message.id, { content: plain });
 }
@@ -36,7 +38,6 @@ export function redecryptVisible() {
     const channelId = SelectedChannelStore.getChannelId();
     if (!channelId) return;
 
-    const collection: any = MessageStore.getMessages(channelId);
-    const messages: any[] = collection?.toArray?.() ?? collection?._array ?? [];
+    const messages: any[] = (MessageStore.getMessages(channelId) as any)?._array ?? [];
     for (const message of messages) tryDecrypt(message);
 }
