@@ -18,6 +18,10 @@ interface LanguageToolMatch {
     offset: number;
     length: number;
     replacements: { value: string; }[];
+    rule?: {
+        issueType?: string;
+        category?: { id?: string; };
+    };
 }
 
 export interface CorrectionValue {
@@ -25,16 +29,55 @@ export interface CorrectionValue {
     fixes: number;
 }
 
+// "Style" suggestions that make an autocorrect feel intrusive — skipped unless
+// the user picks "Everything".
+const STYLE_CATEGORIES = new Set(["STYLE", "TYPOGRAPHY", "CASING", "REDUNDANCY", "COLLOQUIALISMS", "PLAIN_ENGLISH", "CREATIVE_WRITING"]);
+const STYLE_ISSUE_TYPES = new Set(["style", "typographical", "register", "locale-violation"]);
+
+function inScope(m: LanguageToolMatch, scope: string): boolean {
+    if (scope === "all") return true;
+    const category = m.rule?.category?.id ?? "";
+    const issue = m.rule?.issueType ?? "";
+    if (scope === "spelling") return issue === "misspelling" || category === "TYPOS";
+    // "grammar": everything except the noisy style/casing/typography rules.
+    return !STYLE_CATEGORIES.has(category) && !STYLE_ISSUE_TYPES.has(issue);
+}
+
+// Spans that must never be touched (correcting inside them would break the
+// mention/emoji/link/code), so any match overlapping one is dropped.
+function protectedRanges(text: string): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    const patterns = [
+        /```[\s\S]*?```/g,        // code blocks
+        /`[^`\n]+`/g,             // inline code
+        /<a?:\w+:\d+>/g,          // custom / animated emoji
+        /<[@#][!&]?\d+>/g,        // user / role / channel mentions
+        /:[a-z0-9_+-]+:/gi,       // :shortcode: emoji
+        /https?:\/\/\S+/gi,       // links
+        /@(?:everyone|here)\b/gi  // @everyone / @here
+    ];
+    for (const re of patterns) {
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(text))) ranges.push([m.index, m.index + m[0].length]);
+    }
+    return ranges;
+}
+
 // Apply LanguageTool's suggested replacements. Walk from the end so earlier
-// offsets stay valid as we splice, and skip matches with no replacement.
-function applyMatches(text: string, matches: LanguageToolMatch[]): CorrectionValue {
+// offsets stay valid as we splice. Skip matches with no replacement, ones out of
+// the chosen scope, and ones overlapping a protected span.
+function applyMatches(text: string, matches: LanguageToolMatch[], scope: string): CorrectionValue {
+    const ranges = protectedRanges(text);
     let result = text;
     let fixes = 0;
 
     for (const m of [...matches].sort((a, b) => b.offset - a.offset)) {
         const replacement = m.replacements?.[0]?.value;
         if (replacement == null) continue;
-        result = result.slice(0, m.offset) + replacement + result.slice(m.offset + m.length);
+        if (!inScope(m, scope)) continue;
+        const end = m.offset + m.length;
+        if (ranges.some(([s, e]) => m.offset < e && end > s)) continue;
+        result = result.slice(0, m.offset) + replacement + result.slice(end);
         fixes++;
     }
 
@@ -70,7 +113,7 @@ export async function correctSilent(text: string): Promise<CorrectionValue | nul
             settings.store.language || "auto"
         );
         if (status !== 200) return null;
-        return applyMatches(text, JSON.parse(data).matches ?? []);
+        return applyMatches(text, JSON.parse(data).matches ?? [], settings.store.scope || "grammar");
     } catch {
         return null;
     }

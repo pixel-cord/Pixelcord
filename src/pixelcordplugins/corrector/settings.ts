@@ -18,6 +18,15 @@ export const settings = definePluginSettings({
         description: "How long (ms) to wait after you stop typing before correcting",
         default: 1200
     },
+    scope: {
+        type: OptionType.SELECT,
+        description: "What to fix",
+        options: [
+            { label: "Spelling + grammar (recommended)", value: "grammar", default: true },
+            { label: "Spelling only", value: "spelling" },
+            { label: "Everything (incl. style, casing, smart quotes)", value: "all" }
+        ]
+    },
     language: {
         type: OptionType.STRING,
         description: "Language code (e.g. auto, en-US, pt-BR, es). 'auto' detects it for you.",

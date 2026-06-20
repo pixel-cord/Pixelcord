@@ -65,6 +65,8 @@ async function runCorrection() {
 
     const text = getDraft(channelId);
     if (text.trim().length < 2 || text === lastApplied) return;
+    // Don't touch slash commands, and skip drafts too big for the public API.
+    if (text.trimStart().startsWith("/") || text.length > 10000) return;
 
     // Leave the word currently being typed (no trailing whitespace) untouched.
     let head = text;
