@@ -18,7 +18,9 @@ import { useUsersConnectionsStore } from "./lib/store";
 // Settings modal — where the current user adds/edits their own connections.
 // ---------------------------------------------------------------------------
 
-function ManageModal({ modalProps }: { modalProps: RenderModalProps; }) {
+function ManageModal({ modalProps, only }: { modalProps: RenderModalProps; only?: string; }) {
+    const shown = only ? PLATFORMS.filter(p => p.id === only) : PLATFORMS;
+    const single = shown.length === 1 ? shown[0] : null;
     const me = UserStore.getCurrentUser();
 
     const [values, setValues] = useState<Connections>({});
@@ -50,14 +52,16 @@ function ManageModal({ modalProps }: { modalProps: RenderModalProps; }) {
     }
 
     return (
-        <Modal {...modalProps} size="md" title="Your connections">
+        <Modal {...modalProps} size="md" title={single ? single.name : "Your connections"}>
             <div style={{ padding: 16 }}>
                 <Paragraph className={Margins.bottom16}>
-                    Add extra connections to your profile. They show up for everyone using Pixelcord.
+                    {single
+                        ? `Enter your ${single.name} username. It shows up on your profile for everyone using Pixelcord.`
+                        : "Add extra connections to your profile. They show up for everyone using Pixelcord."}
                 </Paragraph>
                 {loading
                     ? <Paragraph>Loading…</Paragraph>
-                    : PLATFORMS.map(p => (
+                    : shown.map(p => (
                         <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0" }}>
                             <p.Icon size={28} />
                             <div style={{ flex: 1 }}>
@@ -95,9 +99,9 @@ export function SettingsComponent() {
 
 // Opens the connection editor from anywhere (e.g. Discord's native "Add
 // connection" modal), authorizing with Discord first if needed.
-export function openManageConnections() {
+export function openManageConnections(only?: string) {
     const auth = useAuthorizationStore.getState();
-    const open = () => openModal(props => <ManageModal modalProps={props} />);
+    const open = () => openModal(props => <ManageModal modalProps={props} only={only} />);
     if (auth.isAuthorized()) open();
     else auth.authorize().then(open).catch(() => { });
 }

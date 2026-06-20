@@ -35,7 +35,7 @@ function installWindowOpenHook() {
         if (/connection|authorize|oauth/i.test(s)) logger.info("window.open ->", s);
         if (url != null && isOurConnectUrl(s)) {
             logger.info("Intercepted connect URL:", s);
-            openManageConnections();
+            openManageConnections(OUR_TYPES.find(t => s.toLowerCase().includes(t)));
             return null;
         }
         return origWindowOpen!(url as any, ...(rest as []));
@@ -55,11 +55,12 @@ function installClickInterception() {
 
         const label = (el.getAttribute("aria-label") || el.getAttribute("title") || "")
             .toLowerCase().replace(/[^a-z]/g, "");
-        if (label && OUR_TYPES.some(t => label.includes(t))) {
+        const matched = label ? OUR_TYPES.find(t => label.includes(t)) : undefined;
+        if (matched) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            openManageConnections();
+            openManageConnections(matched);
         }
     };
     document.addEventListener("click", clickListener, true);
