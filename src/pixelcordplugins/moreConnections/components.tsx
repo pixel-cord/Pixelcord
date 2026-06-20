@@ -9,10 +9,10 @@ import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Button, Modal, openModal, showToast, TextInput, Toasts, useEffect, UserStore, useState } from "@webpack/common";
 
-import { Connections, getMyConnections, setMyConnections } from "./lib/api";
+import { Connections } from "./lib/api";
 import { useAuthorizationStore } from "./lib/auth";
+import { loadMine, saveMine } from "./lib/mine";
 import { PLATFORMS } from "./lib/platforms";
-import { useUsersConnectionsStore } from "./lib/store";
 
 // ---------------------------------------------------------------------------
 // Settings modal — where the current user adds/edits their own connections.
@@ -21,15 +21,14 @@ import { useUsersConnectionsStore } from "./lib/store";
 function ManageModal({ modalProps, only }: { modalProps: RenderModalProps; only?: string; }) {
     const shown = only ? PLATFORMS.filter(p => p.id === only) : PLATFORMS;
     const single = shown.length === 1 ? shown[0] : null;
-    const me = UserStore.getCurrentUser();
-
     const [values, setValues] = useState<Connections>({});
+    const [hidden, setHidden] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        getMyConnections()
-            .then(setValues)
+        loadMine()
+            .then(my => { setValues(my.connections); setHidden(my.hidden); })
             .catch(() => showToast("Failed to load your connections.", Toasts.Type.FAILURE))
             .finally(() => setLoading(false));
     }, []);
@@ -41,10 +40,12 @@ function ManageModal({ modalProps, only }: { modalProps: RenderModalProps; only?
             const v = p.normalize(values[p.id] ?? "");
             if (v) normalized[p.id] = v;
         }
-        setMyConnections(normalized)
-            .then(saved => {
-                setValues(saved);
-                useUsersConnectionsStore.getState().setLocal(me.id, saved);
+        // Keep visibility for platforms that still have a value.
+        const nextHidden = hidden.filter(p => normalized[p]);
+        saveMine({ connections: normalized, hidden: nextHidden })
+            .then(my => {
+                setValues(my.connections);
+                setHidden(my.hidden);
                 showToast("Saved your connections.", Toasts.Type.SUCCESS);
             })
             .catch(e => showToast(`Failed to save: ${e instanceof Error ? e.message : e}`, Toasts.Type.FAILURE))

@@ -10,6 +10,12 @@ import { API_URL } from "./constants";
 /** Map of platform id -> handle/username, e.g. { instagram: "someone" }. */
 export type Connections = Record<string, string>;
 
+/** The signed-in user's connections: values plus which platforms are hidden. */
+export interface MyConnections {
+    connections: Connections;
+    hidden: string[];
+}
+
 export async function fetchApi(url: RequestInfo, options?: RequestInit) {
     const res = await fetch(url, {
         ...options,
@@ -32,12 +38,18 @@ export const getUsersConnections = async (ids: string[]): Promise<Record<string,
     return fetch(url).then(res => res.json());
 };
 
-export const getMyConnections = async (): Promise<Connections> =>
-    fetchApi(`${API_URL}/me/connections`).then(res => res.json()).then(data => data.connections ?? {});
+export const getMyConnections = async (): Promise<MyConnections> =>
+    fetchApi(`${API_URL}/me/connections`).then(res => res.json()).then(d => ({
+        connections: d.connections ?? {},
+        hidden: d.hidden ?? []
+    }));
 
-export const setMyConnections = async (connections: Connections): Promise<Connections> =>
+export const setMyConnections = async (connections: Connections, hidden: string[] = []): Promise<MyConnections> =>
     fetchApi(`${API_URL}/me/connections`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connections })
-    }).then(res => res.json()).then(data => data.connections ?? {});
+        body: JSON.stringify({ connections, hidden })
+    }).then(res => res.json()).then(d => ({
+        connections: d.connections ?? {},
+        hidden: d.hidden ?? []
+    }));

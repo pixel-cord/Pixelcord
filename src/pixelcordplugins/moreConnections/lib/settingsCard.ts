@@ -6,34 +6,31 @@
 
 import { Logger } from "@utils/Logger";
 import { findStore } from "@webpack";
-import { UserStore } from "@webpack/common";
 
+import { getMine, loadMine, onMineChange, setVisible } from "./mine";
 import { PLATFORMS } from "./platforms";
-import { useUsersConnectionsStore } from "./store";
 
 const logger = new Logger("MoreConnections");
 
 let store: any = null;
 let origGetAccounts: ((...args: any[]) => any) | null = null;
+let unsubMine: (() => void) | null = null;
+let clickListener: ((e: MouseEvent) => void) | null = null;
 
 // Build account objects (the shape the Connections settings list renders into
-// cards) from the current user's configured connections.
+// cards) from the current user's configured connections, reflecting visibility.
 function ourAccounts(): any[] {
-    const me = UserStore.getCurrentUser();
-    if (!me) return [];
-    const conns = useUsersConnectionsStore.getState().get(me.id);
-    if (!conns) return [];
-
+    const { connections, hidden } = getMine();
     const out: any[] = [];
     for (const p of PLATFORMS) {
-        const name = conns[p.id];
+        const name = connections[p.id];
         if (!name) continue;
         out.push({
             type: p.id,
             id: `${p.id}:${name}`,
             name,
             verified: false,
-            visibility: 1,
+            visibility: hidden.includes(p.id) ? 0 : 1,
             revoked: false,
             friendSync: false,
             showActivity: false,
@@ -45,6 +42,37 @@ function ourAccounts(): any[] {
     return out;
 }
 
+// The "Show on profile" toggle on our card is Discord's switch and does nothing
+// for our synthetic accounts. Catch the click, find which of our connections the
+// card is for (by its value text), and flip our own visibility instead.
+function installToggleInterception() {
+    if (clickListener) return;
+    clickListener = (e: MouseEvent) => {
+        const sw = (e.target as HTMLElement | null)?.closest?.('[role="switch"],input[type="checkbox"]') as HTMLElement | null;
+        if (!sw) return;
+
+        const values = Object.entries(getMine().connections); // [platform, value][]
+        if (!values.length) return;
+
+        let node: HTMLElement | null = sw;
+        let platform: string | undefined;
+        for (let i = 0; i < 8 && node; i++) {
+            const txt = node.textContent || "";
+            const hit = values.find(([, v]) => v && txt.includes(v));
+            if (hit) { platform = hit[0]; break; }
+            node = node.parentElement;
+        }
+        if (!platform) return; // not one of our cards
+
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        // Flip: if it's currently hidden, make it visible, and vice-versa.
+        setVisible(platform, getMine().hidden.includes(platform));
+    };
+    document.addEventListener("click", clickListener, true);
+}
+
 export function installSettingsCard() {
     if (origGetAccounts) return;
 
@@ -53,7 +81,6 @@ export function installSettingsCard() {
         logger.warn("ConnectedAccountsStore.getAccounts not found — settings cards unavailable.", store && Object.keys(store));
         return;
     }
-
     logger.info("ConnectedAccountsStore keys:", Object.keys(store));
 
     origGetAccounts = store.getAccounts.bind(store);
@@ -62,15 +89,26 @@ export function installSettingsCard() {
         const ours = ourAccounts().filter(a => !accounts.some((x: any) => x.type === a.type && x.name === a.name));
         return ours.length ? [...accounts, ...ours] : accounts;
     };
+
+    // Re-render the list whenever our data changes.
+    unsubMine = onMineChange(() => { try { store?.emitChange?.(); } catch { /* ignore */ } });
+
+    installToggleInterception();
+    loadMine();
 }
 
-// Nudge the settings list to re-read after our data changes.
 export function refreshSettingsCard() {
-    try { store?.emitChange?.(); } catch { /* ignore */ }
+    loadMine();
 }
 
 export function uninstallSettingsCard() {
     if (store && origGetAccounts) store.getAccounts = origGetAccounts;
+    if (clickListener) {
+        document.removeEventListener("click", clickListener, true);
+        clickListener = null;
+    }
+    unsubMine?.();
+    unsubMine = null;
     origGetAccounts = null;
     store = null;
 }
