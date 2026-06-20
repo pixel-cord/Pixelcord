@@ -52,6 +52,9 @@ function installClickInterception() {
     clickListener = (e: MouseEvent) => {
         const el = (e.target as HTMLElement | null)?.closest?.('button,[role="button"]') as HTMLElement | null;
         if (!el) return;
+        // Only the icon-only "Add connection" tiles, never the connections-list
+        // cards (which have text) — otherwise toggling a card opens the editor.
+        if ((el.textContent || "").trim()) return;
 
         const label = (el.getAttribute("aria-label") || el.getAttribute("title") || "")
             .toLowerCase().replace(/[^a-z]/g, "");
