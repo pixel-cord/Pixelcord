@@ -7,6 +7,7 @@
 import { Logger } from "@utils/Logger";
 import { findStore } from "@webpack";
 
+import { useAuthorizationStore } from "./auth";
 import { getMine, loadMine, onMineChange, setVisible } from "./mine";
 import { PLATFORMS } from "./platforms";
 
@@ -15,7 +16,11 @@ const logger = new Logger("MoreConnections");
 let store: any = null;
 let origGetAccounts: ((...args: any[]) => any) | null = null;
 let unsubMine: (() => void) | null = null;
+let unsubAuth: (() => void) | null = null;
 let clickListener: ((e: MouseEvent) => void) | null = null;
+// The auth token rehydrates asynchronously, so load our connections once it's
+// available (and again if it changes), guarded so we never load in a loop.
+let lastToken: string | null = null;
 
 // Build account objects (the shape the Connections settings list renders into
 // cards) from the current user's configured connections, reflecting visibility.
@@ -94,7 +99,16 @@ export function installSettingsCard() {
     unsubMine = onMineChange(() => { try { store?.emitChange?.(); } catch { /* ignore */ } });
 
     installToggleInterception();
-    loadMine();
+
+    const tryLoad = () => {
+        const token = useAuthorizationStore.getState().token;
+        if (token && token !== lastToken) {
+            lastToken = token;
+            loadMine();
+        }
+    };
+    tryLoad();
+    unsubAuth = (useAuthorizationStore as any).subscribe(tryLoad);
 }
 
 export function refreshSettingsCard() {
@@ -109,6 +123,9 @@ export function uninstallSettingsCard() {
     }
     unsubMine?.();
     unsubMine = null;
+    unsubAuth?.();
+    unsubAuth = null;
+    lastToken = null;
     origGetAccounts = null;
     store = null;
 }
