@@ -101,7 +101,7 @@ export function installSettingsCard() {
     installToggleInterception();
 
     const tryLoad = () => {
-        const token = useAuthorizationStore.getState().token;
+        const { token } = useAuthorizationStore.getState();
         if (token && token !== lastToken) {
             lastToken = token;
             loadMine();
