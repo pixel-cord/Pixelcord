@@ -29,10 +29,15 @@ const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
     const { enabled, key } = settings.use(["enabled", "key"]);
     if (!isMainChat) return null;
 
-    const active = enabled && !!key;
+    const active = enabled;
+    const tooltip = !active
+        ? "Encrypted messages (right-click to toggle)"
+        : key
+            ? "Encryption: ON · personal key (right-click to toggle)"
+            : "Encryption: ON · global key (right-click to toggle)";
     return (
         <ChatBarButton
-            tooltip={active ? "Encryption: ON (right-click to toggle)" : "Encrypted messages (right-click to toggle)"}
+            tooltip={tooltip}
             onClick={() => openKeyModal()}
             onContextMenu={() => {
                 const next = !settings.store.enabled;

@@ -22,28 +22,49 @@ const LOOKS_BASE64 = /^[A-Za-z0-9+/]{32,}={0,2}$/;
 // Strip a leading marker left by older versions (🔐 or zero-width chars).
 const LEADING_MARKER = /^[\u200B-\u200F\uFEFF\u{1F510}]+/u;
 
-export async function encryptContent(text: string): Promise<string | null> {
-    const { key } = settings.store;
-    if (!key) return null;
-    return encrypt(text, key);
+// Built-in shared key, used when encryption is on but the user set no personal key.
+// It lives in the source, so a "global" message is only hidden from Discord and
+// people without the plugin — every Pixelcord user can read it. A personal key is
+// what gives real privacy.
+const GLOBAL_KEY = "pixelcord-global-encrypted-messages-v1";
+
+// Key used to encrypt outgoing messages: the personal one if set, else the global.
+function encryptionKey(): string {
+    return settings.store.key || GLOBAL_KEY;
 }
 
-// Returns the plaintext for an encrypted-looking content string, or null.
-async function decryptContent(content: string, key: string): Promise<string | null> {
+// Keys to try when decrypting: the personal one (if any) first, then the global —
+// so you can always read global messages even with a personal key set.
+function candidateKeys(): string[] {
+    const { key } = settings.store;
+    return key ? [key, GLOBAL_KEY] : [GLOBAL_KEY];
+}
+
+export async function encryptContent(text: string): Promise<string | null> {
+    return encrypt(text, encryptionKey());
+}
+
+// Returns the plaintext for an encrypted-looking content string, or null. Tries the
+// personal key then the global one.
+async function decryptContent(content: string): Promise<string | null> {
     const cleaned = content.replace(LEADING_MARKER, "").trim();
     if (!LOOKS_BASE64.test(cleaned)) return null;
-    return decryptAny(cleaned, key);
+
+    for (const key of candidateKeys()) {
+        const plain = await decryptAny(cleaned, key);
+        if (plain != null) return plain;
+    }
+    return null;
 }
 
 export async function tryDecrypt(message: any) {
-    const { key } = settings.store;
-    if (!key || typeof message?.content !== "string") return;
+    if (typeof message?.content !== "string") return;
 
     // A reply carries a snapshot of the message it answers (in the gateway payload
     // and in ReferencedMessageStore) — decrypt those previews too.
     void tryDecryptReply(message);
 
-    const plain = await decryptContent(message.content, key);
+    const plain = await decryptContent(message.content);
     if (plain == null) return; // not our ciphertext / wrong key
 
     updateMessage(message.channel_id, message.id, { content: plain });
@@ -53,9 +74,6 @@ export async function tryDecrypt(message: any) {
 // from ReferencedMessageStore, a cache separate from MessageStore, so decrypting
 // the original bubble doesn't update it on its own.
 async function tryDecryptReply(message: any) {
-    const { key } = settings.store;
-    if (!key) return;
-
     const reference = message?.messageReference ?? message?.message_reference;
     if (!reference) return;
 
@@ -63,7 +81,7 @@ async function tryDecryptReply(message: any) {
     const refMsg = record?.message;
     if (!refMsg || typeof refMsg.content !== "string") return;
 
-    const plain = await decryptContent(refMsg.content, key);
+    const plain = await decryptContent(refMsg.content);
     if (plain == null) return;
 
     const channelId = reference.channel_id ?? refMsg.channel_id;

@@ -29,6 +29,7 @@ function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
                 <div>
                     <Paragraph className={Margins.bottom8}>
                         Shared key — you and the other person must set the exact same one. Anyone without it only sees ciphertext.
+                        Leave it empty to use the built-in global key (readable by everyone with the plugin).
                     </Paragraph>
                     <TextInput type="password" value={input} onChange={(v: string) => setInput(v)} placeholder="your secret key" />
                 </div>
