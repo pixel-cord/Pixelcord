@@ -18,6 +18,36 @@ const logger = new Logger("MoreConnections");
 let patched = false;
 const saved: Record<string, any> = {};
 
+// Discord opens the connection OAuth by navigating to a `.../connections/
+// instagram/authorize` URL. We can't know which exact function does it, so we
+// hook window.open narrowly: only Instagram connect URLs are intercepted (open
+// our editor instead); everything else passes straight through.
+let origWindowOpen: typeof window.open | null = null;
+
+function isInstagramConnectUrl(url: string): boolean {
+    return /instagram/i.test(url) && /(authorize|\/connections\/)/i.test(url);
+}
+
+function installWindowOpenHook() {
+    if (origWindowOpen) return;
+    origWindowOpen = window.open.bind(window);
+    window.open = function (url?: string | URL, ...rest: any[]) {
+        if (url != null && isInstagramConnectUrl(String(url))) {
+            logger.info("Intercepted Instagram connect URL:", String(url));
+            openManageConnections();
+            return null;
+        }
+        return origWindowOpen!(url as any, ...(rest as []));
+    } as typeof window.open;
+}
+
+function uninstallWindowOpenHook() {
+    if (origWindowOpen) {
+        window.open = origWindowOpen;
+        origWindowOpen = null;
+    }
+}
+
 export function installNativeInstagram() {
     if (patched) return;
 
@@ -55,6 +85,8 @@ export function installNativeInstagram() {
             }
         }
 
+        installWindowOpenHook();
+
         patched = true;
     } catch (e) {
         logger.error("Failed to install native Instagram connection", e);
@@ -73,6 +105,8 @@ export function uninstallNativeInstagram() {
         }
         if (saved.registryIsSupported) platforms.isSupported = saved.registryIsSupported;
     } catch { /* ignore */ }
+
+    uninstallWindowOpenHook();
 
     for (const key of Object.keys(saved)) delete saved[key];
     patched = false;
