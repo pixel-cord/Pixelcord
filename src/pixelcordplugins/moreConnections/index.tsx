@@ -15,7 +15,7 @@ import { useAuthorizationStore } from "./lib/auth";
 import { loadApiConfig } from "./lib/constants";
 import { installNativeConnections, uninstallNativeConnections } from "./lib/nativeAdd";
 import { PLATFORMS } from "./lib/platforms";
-import { installSettingsCard, refreshSettingsCard, uninstallSettingsCard } from "./lib/settingsCard";
+import { installSettingsCard, uninstallSettingsCard } from "./lib/settingsCard";
 import { useUsersConnectionsStore } from "./lib/store";
 
 const settings = definePluginSettings({
@@ -122,7 +122,6 @@ export default definePlugin({
                 lastUsersRef = state.users;
                 mergeCache.clear();
                 try { (UserProfileStore as any).emitChange(); } catch { }
-                refreshSettingsCard();
             }
         });
 
