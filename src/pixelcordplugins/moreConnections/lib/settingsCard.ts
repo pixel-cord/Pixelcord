@@ -5,19 +5,24 @@
  */
 
 import { Logger } from "@utils/Logger";
-import { findStore } from "@webpack";
+import { findByProps, findStore } from "@webpack";
 
 import { useAuthorizationStore } from "./auth";
-import { getMine, loadMine, onMineChange, setVisible } from "./mine";
+import { getMine, loadMine, onMineChange, removeMine, setVisible } from "./mine";
 import { PLATFORMS } from "./platforms";
 
 const logger = new Logger("MoreConnections");
+const OUR_TYPES = PLATFORMS.map(p => p.id);
 
 let store: any = null;
 let origGetAccounts: ((...args: any[]) => any) | null = null;
 let unsubMine: (() => void) | null = null;
 let unsubAuth: (() => void) | null = null;
-let clickListener: ((e: MouseEvent) => void) | null = null;
+// RestAPI overrides, so the card's toggle/X act on our backend instead of hitting
+// Discord (which 404s "Unknown Connection" for our synthetic accounts).
+let restApi: any = null;
+let origPatch: ((...args: any[]) => any) | null = null;
+let origDel: ((...args: any[]) => any) | null = null;
 // The auth token rehydrates asynchronously, so load our connections once it's
 // available (and again if it changes), guarded so we never load in a loop.
 let lastToken: string | null = null;
@@ -47,35 +52,44 @@ function ourAccounts(): any[] {
     return out;
 }
 
-// The "Show on profile" toggle on our card is Discord's switch and does nothing
-// for our synthetic accounts. Catch the click, find which of our connections the
-// card is for (by its value text), and flip our own visibility instead.
-function installToggleInterception() {
-    if (clickListener) return;
-    clickListener = (e: MouseEvent) => {
-        const sw = (e.target as HTMLElement | null)?.closest?.('[role="switch"],input[type="checkbox"]') as HTMLElement | null;
-        if (!sw) return;
+// The card's "Show on profile" toggle PATCHes, and the X DELETEs,
+// /users/@me/connections/<type>/<id>. For our synthetic accounts Discord 404s,
+// so intercept those RestAPI calls: apply the change to our backend and resolve
+// with a fake success so Discord's UI never sees an error.
+function ourType(url: string): string | null {
+    const m = /\/connections\/([^/]+)\//.exec(url || "");
+    return m && OUR_TYPES.includes(m[1]) ? m[1] : null;
+}
 
-        const values = Object.entries(getMine().connections); // [platform, value][]
-        if (!values.length) return;
+const fakeOk = () => Promise.resolve({ ok: true, status: 200, body: {}, text: "", headers: {} });
 
-        let node: HTMLElement | null = sw;
-        let platform: string | undefined;
-        for (let i = 0; i < 8 && node; i++) {
-            const txt = node.textContent || "";
-            const hit = values.find(([, v]) => v && txt.includes(v));
-            if (hit) { platform = hit[0]; break; }
-            node = node.parentElement;
+function installRestInterception() {
+    if (origPatch) return;
+    restApi = findByProps("del", "put", "patch");
+    if (!restApi?.patch || !restApi?.del) {
+        logger.warn("RestAPI not found — card toggle/remove won't sync to our backend.");
+        return;
+    }
+
+    origPatch = restApi.patch.bind(restApi);
+    restApi.patch = (opts: any) => {
+        const type = ourType(opts?.url);
+        if (type) {
+            setVisible(type, !!opts?.body?.visibility);
+            return fakeOk();
         }
-        if (!platform) return; // not one of our cards
-
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        // Flip: if it's currently hidden, make it visible, and vice-versa.
-        setVisible(platform, getMine().hidden.includes(platform));
+        return origPatch!(opts);
     };
-    document.addEventListener("click", clickListener, true);
+
+    origDel = restApi.del.bind(restApi);
+    restApi.del = (opts: any) => {
+        const type = ourType(opts?.url);
+        if (type) {
+            removeMine(type);
+            return fakeOk();
+        }
+        return origDel!(opts);
+    };
 }
 
 export function installSettingsCard() {
@@ -98,7 +112,7 @@ export function installSettingsCard() {
     // Re-render the list whenever our data changes.
     unsubMine = onMineChange(() => { try { store?.emitChange?.(); } catch { /* ignore */ } });
 
-    installToggleInterception();
+    installRestInterception();
 
     const tryLoad = () => {
         const { token } = useAuthorizationStore.getState();
@@ -117,10 +131,9 @@ export function refreshSettingsCard() {
 
 export function uninstallSettingsCard() {
     if (store && origGetAccounts) store.getAccounts = origGetAccounts;
-    if (clickListener) {
-        document.removeEventListener("click", clickListener, true);
-        clickListener = null;
-    }
+    if (restApi && origPatch) restApi.patch = origPatch;
+    if (restApi && origDel) restApi.del = origDel;
+    origPatch = origDel = restApi = null;
     unsubMine?.();
     unsubMine = null;
     unsubAuth?.();

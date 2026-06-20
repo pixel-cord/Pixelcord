@@ -66,3 +66,9 @@ export function setVisible(platform: string, visible: boolean): Promise<MyConnec
     else hidden.add(platform);
     return saveMine({ connections: cache.connections, hidden: [...hidden] });
 }
+
+export function removeMine(platform: string): Promise<MyConnections> {
+    const connections = { ...cache.connections };
+    delete connections[platform];
+    return saveMine({ connections, hidden: cache.hidden.filter(p => p !== platform) });
+}
