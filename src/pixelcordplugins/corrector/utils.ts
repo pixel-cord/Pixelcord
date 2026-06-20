@@ -48,13 +48,13 @@ function inScope(m: LanguageToolMatch, scope: string): boolean {
 function protectedRanges(text: string): Array<[number, number]> {
     const ranges: Array<[number, number]> = [];
     const patterns = [
-        /```[\s\S]*?```/g,        // code blocks
-        /`[^`\n]+`/g,             // inline code
-        /<a?:\w+:\d+>/g,          // custom / animated emoji
-        /<[@#][!&]?\d+>/g,        // user / role / channel mentions
-        /:[a-z0-9_+-]+:/gi,       // :shortcode: emoji
-        /https?:\/\/\S+/gi,       // links
-        /@(?:everyone|here)\b/gi  // @everyone / @here
+        /```[\s\S]*?```/g, // code blocks
+        /`[^`\n]+`/g, // inline code
+        /<a?:\w+:\d+>/g, // custom / animated emoji
+        /<[@#][!&]?\d+>/g, // user / role / channel mentions
+        /:[a-z0-9_+-]+:/gi, // :shortcode: emoji
+        /https?:\/\/\S+/gi, // links
+        /@(?:everyone|here)\b/gi // @everyone / @here
     ];
     for (const re of patterns) {
         let m: RegExpExecArray | null;
