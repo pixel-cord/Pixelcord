@@ -29,8 +29,12 @@ function installWindowOpenHook() {
     if (origWindowOpen) return;
     origWindowOpen = window.open.bind(window);
     window.open = function (url?: string | URL, ...rest: any[]) {
-        if (url != null && isOurConnectUrl(String(url))) {
-            logger.info("Intercepted connect URL:", String(url));
+        const s = url != null ? String(url) : "";
+        // Diagnostic: surface any connection-related open so we can see what the
+        // Last.fm click actually triggers.
+        if (/connection|authorize|oauth/i.test(s)) logger.info("window.open ->", s);
+        if (url != null && isOurConnectUrl(s)) {
+            logger.info("Intercepted connect URL:", s);
             openManageConnections();
             return null;
         }
