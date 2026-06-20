@@ -54,24 +54,31 @@ function ourAccounts(): any[] {
     return out;
 }
 
-// The card's "Show on profile" toggle PATCHes, and the X DELETEs,
-// /users/@me/connections/<type>/<id>. Apply the change to our backend; return
-// true if it was one of ours (so the caller fakes a success).
-function handleOurRequest(method: string, url: string, body: any): boolean {
+// The card's "Show on profile" toggle PATCHes, the X DELETEs, and "show again"
+// GETs /users/@me/connections/<type>/<id>(/authorize). Apply the change to our
+// backend and return the body to fake back, or null if it isn't one of ours.
+function handleOurRequest(method: string, url: string, body: any): Record<string, any> | null {
     const m = /\/connections\/([^/?]+)\//.exec(url);
-    if (!m || !OUR_TYPES.includes(m[1])) return false;
+    if (!m || !OUR_TYPES.includes(m[1])) return null;
 
     if (method === "DELETE") {
         removeMine(m[1]);
-        return true;
+        return {};
     }
     if (method === "PATCH") {
         let parsed: any = {};
         try { parsed = typeof body === "string" ? JSON.parse(body) : (body ?? {}); } catch { /* ignore */ }
         setVisible(m[1], !!parsed.visibility);
-        return true;
+        return {};
     }
-    return false;
+    // Discord re-shows a hidden connection through its connect/authorize flow. For
+    // our synthetic connection just make it visible again and return no OAuth url,
+    // so Discord doesn't open a window / our editor.
+    if (method === "GET" && url.includes("/authorize")) {
+        setVisible(m[1], true);
+        return { url: null };
+    }
+    return null;
 }
 
 function installNetworkInterception() {
@@ -81,9 +88,10 @@ function installNetworkInterception() {
     window.fetch = (input: any, init?: any) => {
         const url = typeof input === "string" ? input : input?.url ?? "";
         const method = (init?.method || input?.method || "GET").toUpperCase();
-        if (typeof url === "string" && handleOurRequest(method, url, init?.body)) {
+        const fake = typeof url === "string" ? handleOurRequest(method, url, init?.body) : null;
+        if (fake) {
             logger.info("Intercepted connection request (fetch):", method, url);
-            return Promise.resolve(new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
+            return Promise.resolve(new Response(JSON.stringify(fake), { status: 200, headers: { "content-type": "application/json" } }));
         }
         return origFetch!(input, init);
     };
@@ -100,17 +108,17 @@ function installNetworkInterception() {
     XMLHttpRequest.prototype.send = function (body?: any) {
         const method = (this as any).__mcMethod || "";
         const url = (this as any).__mcUrl || "";
-        const m = typeof url === "string" ? /\/connections\/([^/?]+)\//.exec(url) : null;
-        if (m && OUR_TYPES.includes(m[1]) && (method === "PATCH" || method === "DELETE")) {
+        const fake = typeof url === "string" ? handleOurRequest(method, url, body) : null;
+        if (fake) {
             logger.info("Intercepted connection request (xhr):", method, url);
-            handleOurRequest(method, url, body);
 
             const xhr = this as any;
+            const text = JSON.stringify(fake);
             Object.defineProperty(xhr, "readyState", { configurable: true, get: () => 4 });
             Object.defineProperty(xhr, "status", { configurable: true, get: () => 200 });
             Object.defineProperty(xhr, "statusText", { configurable: true, get: () => "OK" });
-            Object.defineProperty(xhr, "responseText", { configurable: true, get: () => "{}" });
-            Object.defineProperty(xhr, "response", { configurable: true, get: () => "{}" });
+            Object.defineProperty(xhr, "responseText", { configurable: true, get: () => text });
+            Object.defineProperty(xhr, "response", { configurable: true, get: () => text });
             xhr.getAllResponseHeaders = () => "content-type: application/json\r\n";
             xhr.getResponseHeader = (n: string) => (n?.toLowerCase() === "content-type" ? "application/json" : null);
 
