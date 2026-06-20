@@ -40,6 +40,17 @@ function InstagramIcon({ size = 32 }: { size?: number; }) {
     );
 }
 
+function LastfmIcon({ size = 32 }: { size?: number; }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+            <rect x="1" y="1" width="22" height="22" rx="6" fill="#d51007" />
+            <rect x="6.6" y="13" width="2.4" height="5" rx="1" fill="#fff" />
+            <rect x="10.8" y="9" width="2.4" height="9" rx="1" fill="#fff" />
+            <rect x="15" y="11" width="2.4" height="7" rx="1" fill="#fff" />
+        </svg>
+    );
+}
+
 export const PLATFORMS: CustomPlatform[] = [
     {
         id: "instagram",
@@ -47,6 +58,14 @@ export const PLATFORMS: CustomPlatform[] = [
         placeholder: "your.handle",
         Icon: InstagramIcon,
         profileUrl: value => `https://www.instagram.com/${value}`,
+        normalize: raw => raw.trim().replace(/^@+/, "").replace(/[^A-Za-z0-9._-]/g, "").slice(0, 100),
+    },
+    {
+        id: "lastfm",
+        name: "Last.fm",
+        placeholder: "your-username",
+        Icon: LastfmIcon,
+        profileUrl: value => `https://www.last.fm/user/${value}`,
         normalize: raw => raw.trim().replace(/^@+/, "").replace(/[^A-Za-z0-9._-]/g, "").slice(0, 100),
     },
 ];

@@ -13,7 +13,7 @@ import { UserProfileStore, UserStore } from "@webpack/common";
 import { SettingsComponent } from "./components";
 import { useAuthorizationStore } from "./lib/auth";
 import { loadApiConfig } from "./lib/constants";
-import { installNativeInstagram, uninstallNativeInstagram } from "./lib/nativeAdd";
+import { installNativeConnections, uninstallNativeConnections } from "./lib/nativeAdd";
 import { PLATFORMS } from "./lib/platforms";
 import { useUsersConnectionsStore } from "./lib/store";
 
@@ -111,7 +111,7 @@ export default definePlugin({
         useAuthorizationStore.getState().init();
 
         installInjection();
-        installNativeInstagram();
+        installNativeConnections();
 
         // When our async data lands (batched fetch), drop the merge cache and nudge
         // profile consumers so the injected connections appear without reopening.
@@ -129,6 +129,6 @@ export default definePlugin({
 
     stop() {
         uninstallInjection();
-        uninstallNativeInstagram();
+        uninstallNativeConnections();
     }
 });
