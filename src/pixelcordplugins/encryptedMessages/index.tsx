@@ -7,22 +7,17 @@
 import "./styles.css";
 
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
-import { updateMessage } from "@api/MessageUpdater";
 import { PixelCordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { classes } from "@utils/misc";
 import definePlugin, { IconComponent } from "@utils/types";
 import { showToast } from "@webpack/common";
 
-import { decrypt, encrypt } from "./crypto";
 import { openKeyModal } from "./KeyModal";
+import { encryptContent, MARKER, tryDecrypt } from "./messages";
 import { settings } from "./settings";
 
 const cl = classNameFactory("vc-encmsg-");
-
-// Invisible (zero-width) prefix marking an encrypted message; the rest is base64
-// ciphertext. No visible lock is added to the message.
-const MARKER = "\u200b\u200c";
 
 const KeyIcon: IconComponent = ({ height = 20, width = 20, className }) => (
     <svg viewBox="0 0 24 24" height={height} width={width} className={className} fill="currentColor" aria-hidden>
@@ -51,16 +46,6 @@ const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
     );
 };
 
-async function tryDecrypt(message: any) {
-    const { key } = settings.store;
-    if (!key || typeof message?.content !== "string" || !message.content.startsWith(MARKER)) return;
-
-    const plain = await decrypt(message.content.slice(MARKER.length), key);
-    if (plain == null) return; // wrong key / unreadable
-
-    updateMessage(message.channel_id, message.id, { content: plain });
-}
-
 export default definePlugin({
     name: "EncryptedMessages",
     description: "Encrypt messages with a shared key — only people with the same key can read them. Toggle and set the key from the chat button.",
@@ -80,9 +65,9 @@ export default definePlugin({
     },
 
     async onBeforeMessageSend(_channelId, message) {
-        const { enabled, key } = settings.store;
-        if (!enabled || !key || !message.content) return;
+        if (!settings.store.enabled || !message.content) return;
         if (message.content.startsWith(MARKER)) return;
-        message.content = MARKER + await encrypt(message.content, key);
+        const encrypted = await encryptContent(message.content);
+        if (encrypted) message.content = encrypted;
     }
 });

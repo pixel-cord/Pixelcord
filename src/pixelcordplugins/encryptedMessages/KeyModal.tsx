@@ -11,6 +11,7 @@ import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, showToast, TextInput, Toasts, useState } from "@webpack/common";
 
+import { redecryptVisible } from "./messages";
 import { settings } from "./settings";
 
 function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
@@ -36,6 +37,7 @@ function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
                     <Button
                         onClick={() => {
                             settings.store.key = input.trim();
+                            redecryptVisible();
                             showToast("Key saved.", Toasts.Type.SUCCESS);
                         }}
                     >
