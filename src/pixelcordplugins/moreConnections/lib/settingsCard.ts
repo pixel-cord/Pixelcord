@@ -5,7 +5,7 @@
  */
 
 import { Logger } from "@utils/Logger";
-import { findByProps, findStore } from "@webpack";
+import { findStore } from "@webpack";
 
 import { useAuthorizationStore } from "./auth";
 import { getMine, loadMine, onMineChange, removeMine, setVisible } from "./mine";
@@ -18,11 +18,13 @@ let store: any = null;
 let origGetAccounts: ((...args: any[]) => any) | null = null;
 let unsubMine: (() => void) | null = null;
 let unsubAuth: (() => void) | null = null;
-// RestAPI overrides, so the card's toggle/X act on our backend instead of hitting
-// Discord (which 404s "Unknown Connection" for our synthetic accounts).
-let restApi: any = null;
-let origPatch: ((...args: any[]) => any) | null = null;
-let origDel: ((...args: any[]) => any) | null = null;
+// Network-level overrides, so the card's toggle/X act on our backend instead of
+// hitting Discord (which 404s "Unknown Connection" for our synthetic accounts).
+// Property-patching RestAPI didn't work (the consumer holds a direct reference),
+// so we intercept fetch + XHR — whichever transport the request actually uses.
+let origFetch: typeof window.fetch | null = null;
+let origXhrOpen: any = null;
+let origXhrSend: any = null;
 // The auth token rehydrates asynchronously, so load our connections once it's
 // available (and again if it changes), guarded so we never load in a loop.
 let lastToken: string | null = null;
@@ -53,50 +55,84 @@ function ourAccounts(): any[] {
 }
 
 // The card's "Show on profile" toggle PATCHes, and the X DELETEs,
-// /users/@me/connections/<type>/<id>. For our synthetic accounts Discord 404s,
-// so intercept those RestAPI calls: apply the change to our backend and resolve
-// with a fake success so Discord's UI never sees an error.
-function ourType(url: string): string | null {
-    const m = /\/connections\/([^/]+)\//.exec(url || "");
-    return m && OUR_TYPES.includes(m[1]) ? m[1] : null;
+// /users/@me/connections/<type>/<id>. Apply the change to our backend; return
+// true if it was one of ours (so the caller fakes a success).
+function handleOurRequest(method: string, url: string, body: any): boolean {
+    const m = /\/connections\/([^/?]+)\//.exec(url);
+    if (!m || !OUR_TYPES.includes(m[1])) return false;
+
+    if (method === "DELETE") {
+        removeMine(m[1]);
+        return true;
+    }
+    if (method === "PATCH") {
+        let parsed: any = {};
+        try { parsed = typeof body === "string" ? JSON.parse(body) : (body ?? {}); } catch { /* ignore */ }
+        setVisible(m[1], !!parsed.visibility);
+        return true;
+    }
+    return false;
 }
 
-const fakeOk = () => Promise.resolve({ ok: true, status: 200, body: {}, text: "", headers: {} });
+function installNetworkInterception() {
+    if (origFetch) return;
 
-function installRestInterception() {
-    if (origPatch) return;
-    restApi = findByProps("del", "put", "patch");
-    if (!restApi?.patch || !restApi?.del) {
-        logger.warn("RestAPI not found — card toggle/remove won't sync to our backend.", restApi && Object.keys(restApi));
-        return;
-    }
-    logger.info("RestAPI keys:", Object.keys(restApi));
-
-    origPatch = restApi.patch.bind(restApi);
-    restApi.patch = (opts: any) => {
-        const url = opts?.url ?? "";
-        if (typeof url === "string" && url.includes("/connections/"))
-            logger.info("RestAPI.patch connections:", url, JSON.stringify(opts?.body));
-        const type = ourType(url);
-        if (type) {
-            setVisible(type, !!opts?.body?.visibility);
-            return fakeOk();
+    origFetch = window.fetch.bind(window);
+    window.fetch = (input: any, init?: any) => {
+        const url = typeof input === "string" ? input : input?.url ?? "";
+        const method = (init?.method || input?.method || "GET").toUpperCase();
+        if (typeof url === "string" && handleOurRequest(method, url, init?.body)) {
+            logger.info("Intercepted connection request (fetch):", method, url);
+            return Promise.resolve(new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
         }
-        return origPatch!(opts);
+        return origFetch!(input, init);
     };
 
-    origDel = restApi.del.bind(restApi);
-    restApi.del = (opts: any) => {
-        const url = opts?.url ?? "";
-        if (typeof url === "string" && url.includes("/connections/"))
-            logger.info("RestAPI.del connections:", url);
-        const type = ourType(url);
-        if (type) {
-            removeMine(type);
-            return fakeOk();
-        }
-        return origDel!(opts);
+    origXhrOpen = XMLHttpRequest.prototype.open;
+    origXhrSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method: string, url: string, ...rest: any[]) {
+        (this as any).__mcMethod = (method || "").toUpperCase();
+        (this as any).__mcUrl = url;
+        return origXhrOpen.call(this, method, url, ...rest);
     };
+
+    XMLHttpRequest.prototype.send = function (body?: any) {
+        const method = (this as any).__mcMethod || "";
+        const url = (this as any).__mcUrl || "";
+        const m = typeof url === "string" ? /\/connections\/([^/?]+)\//.exec(url) : null;
+        if (m && OUR_TYPES.includes(m[1]) && (method === "PATCH" || method === "DELETE")) {
+            logger.info("Intercepted connection request (xhr):", method, url);
+            handleOurRequest(method, url, body);
+
+            const xhr = this as any;
+            Object.defineProperty(xhr, "readyState", { configurable: true, get: () => 4 });
+            Object.defineProperty(xhr, "status", { configurable: true, get: () => 200 });
+            Object.defineProperty(xhr, "statusText", { configurable: true, get: () => "OK" });
+            Object.defineProperty(xhr, "responseText", { configurable: true, get: () => "{}" });
+            Object.defineProperty(xhr, "response", { configurable: true, get: () => "{}" });
+            xhr.getAllResponseHeaders = () => "content-type: application/json\r\n";
+            xhr.getResponseHeader = (n: string) => (n?.toLowerCase() === "content-type" ? "application/json" : null);
+
+            setTimeout(() => {
+                try {
+                    xhr.onreadystatechange?.(new Event("readystatechange"));
+                    xhr.dispatchEvent(new Event("readystatechange"));
+                    xhr.onload?.(new Event("load"));
+                    xhr.dispatchEvent(new Event("load"));
+                    xhr.dispatchEvent(new Event("loadend"));
+                } catch { /* ignore */ }
+            }, 0);
+            return;
+        }
+        return origXhrSend.call(this, body);
+    };
+}
+
+function uninstallNetworkInterception() {
+    if (origFetch) { window.fetch = origFetch; origFetch = null; }
+    if (origXhrOpen) { XMLHttpRequest.prototype.open = origXhrOpen; origXhrOpen = null; }
+    if (origXhrSend) { XMLHttpRequest.prototype.send = origXhrSend; origXhrSend = null; }
 }
 
 export function installSettingsCard() {
@@ -119,7 +155,7 @@ export function installSettingsCard() {
     // Re-render the list whenever our data changes.
     unsubMine = onMineChange(() => { try { store?.emitChange?.(); } catch { /* ignore */ } });
 
-    installRestInterception();
+    installNetworkInterception();
 
     const tryLoad = () => {
         const { token } = useAuthorizationStore.getState();
@@ -138,9 +174,7 @@ export function refreshSettingsCard() {
 
 export function uninstallSettingsCard() {
     if (store && origGetAccounts) store.getAccounts = origGetAccounts;
-    if (restApi && origPatch) restApi.patch = origPatch;
-    if (restApi && origDel) restApi.del = origDel;
-    origPatch = origDel = restApi = null;
+    uninstallNetworkInterception();
     unsubMine?.();
     unsubMine = null;
     unsubAuth?.();
