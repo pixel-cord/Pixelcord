@@ -67,13 +67,17 @@ function installRestInterception() {
     if (origPatch) return;
     restApi = findByProps("del", "put", "patch");
     if (!restApi?.patch || !restApi?.del) {
-        logger.warn("RestAPI not found — card toggle/remove won't sync to our backend.");
+        logger.warn("RestAPI not found — card toggle/remove won't sync to our backend.", restApi && Object.keys(restApi));
         return;
     }
+    logger.info("RestAPI keys:", Object.keys(restApi));
 
     origPatch = restApi.patch.bind(restApi);
     restApi.patch = (opts: any) => {
-        const type = ourType(opts?.url);
+        const url = opts?.url ?? "";
+        if (typeof url === "string" && url.includes("/connections/"))
+            logger.info("RestAPI.patch connections:", url, JSON.stringify(opts?.body));
+        const type = ourType(url);
         if (type) {
             setVisible(type, !!opts?.body?.visibility);
             return fakeOk();
@@ -83,7 +87,10 @@ function installRestInterception() {
 
     origDel = restApi.del.bind(restApi);
     restApi.del = (opts: any) => {
-        const type = ourType(opts?.url);
+        const url = opts?.url ?? "";
+        if (typeof url === "string" && url.includes("/connections/"))
+            logger.info("RestAPI.del connections:", url);
+        const type = ourType(url);
         if (type) {
             removeMine(type);
             return fakeOk();
