@@ -9,16 +9,15 @@ import { findByPropsLazy } from "@webpack";
 
 import { openManageConnections } from "../components";
 
-// Discord's connection-platform registry (each platform's metadata + actions).
+// Discord's connection-platform registry. `get(type)` returns a platform
+// descriptor; the descriptor's `enabled` flag controls whether it's offered in
+// the "Add connection" modal (Discord set Instagram's to false).
 const platforms: any = findByPropsLazy("isSupported", "getByUrl");
 const logger = new Logger("MoreConnections");
 
 let patched = false;
 const saved: Record<string, any> = {};
 
-// Make Instagram show up in Discord's native "Add connection" modal again, and
-// route its connect action to our own handle input (Discord dropped real
-// Instagram OAuth, so we store the handle on the Pixelcord backend instead).
 export function installNativeInstagram() {
     if (patched) return;
 
@@ -29,17 +28,24 @@ export function installNativeInstagram() {
             return;
         }
 
-        // Diagnostic: shows exactly which methods the modal can call, so the
-        // connect interception below can be pinned down if a key is missing.
-        logger.info("Instagram handler keys:", Object.keys(handler));
+        // Diagnostics: handler shape + registry methods (to locate the connect action).
+        logger.info("Instagram handler keys:", Object.keys(handler), "| enabled:", handler.enabled);
+        logger.info("Registry keys:", Object.keys(platforms));
 
-        if (typeof handler.isSupported === "function") {
-            saved.isSupported = handler.isSupported;
-            handler.isSupported = () => true;
+        // Re-enable Instagram so it shows in the Add Connection modal.
+        if ("enabled" in handler) {
+            saved.handlerEnabled = handler.enabled;
+            handler.enabled = true;
+        }
+        if (typeof platforms.isSupported === "function") {
+            saved.registryIsSupported = platforms.isSupported;
+            platforms.isSupported = (type: string, ...rest: any[]) =>
+                type === "instagram" ? true : saved.registryIsSupported.call(platforms, type, ...rest);
         }
 
-        // Route any connect-style action to our editor instead of Discord OAuth.
-        for (const key of ["connect", "authorize", "openConnection", "handleConnect", "getConnectionURL"]) {
+        // Best-effort: route any connect-style action on the descriptor to our
+        // editor. The connect likely lives elsewhere — the logged keys will say.
+        for (const key of ["connect", "authorize", "openConnection", "handleConnect"]) {
             if (typeof handler[key] === "function") {
                 saved[key] = handler[key];
                 handler[key] = () => {
@@ -60,7 +66,12 @@ export function uninstallNativeInstagram() {
 
     try {
         const handler: any = platforms?.get?.("instagram");
-        if (handler) for (const key of Object.keys(saved)) handler[key] = saved[key];
+        if (handler) {
+            if ("handlerEnabled" in saved) handler.enabled = saved.handlerEnabled;
+            for (const key of ["connect", "authorize", "openConnection", "handleConnect"])
+                if (key in saved) handler[key] = saved[key];
+        }
+        if (saved.registryIsSupported) platforms.isSupported = saved.registryIsSupported;
     } catch { /* ignore */ }
 
     for (const key of Object.keys(saved)) delete saved[key];
