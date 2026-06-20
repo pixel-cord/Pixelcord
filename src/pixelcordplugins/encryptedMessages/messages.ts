@@ -5,10 +5,15 @@
  */
 
 import { updateMessage } from "@api/MessageUpdater";
+import { findStoreLazy } from "@webpack";
 import { MessageStore, SelectedChannelStore } from "@webpack/common";
 
-import { decrypt, decryptLegacy, encrypt } from "./crypto";
+import { decryptAny, encrypt } from "./crypto";
 import { settings } from "./settings";
+
+// Holds the small "replied to" preview copies of messages, separate from the main
+// MessageStore — so a decrypted reply preview needs to be updated here too.
+const ReferencedMessageStore = findStoreLazy("ReferencedMessageStore");
 
 // An encrypted message is just its base64 ciphertext — no marker. We only try to
 // decrypt content that looks like pure base64 of plausible length, so normal
@@ -23,18 +28,54 @@ export async function encryptContent(text: string): Promise<string | null> {
     return encrypt(text, key);
 }
 
+// Returns the plaintext for an encrypted-looking content string, or null.
+async function decryptContent(content: string, key: string): Promise<string | null> {
+    const cleaned = content.replace(LEADING_MARKER, "").trim();
+    if (!LOOKS_BASE64.test(cleaned)) return null;
+    return decryptAny(cleaned, key);
+}
+
 export async function tryDecrypt(message: any) {
     const { key } = settings.store;
     if (!key || typeof message?.content !== "string") return;
 
-    const content = message.content.replace(LEADING_MARKER, "").trim();
-    if (!LOOKS_BASE64.test(content)) return;
+    // A reply carries a snapshot of the message it answers (in the gateway payload
+    // and in ReferencedMessageStore) — decrypt those previews too.
+    void tryDecryptReply(message);
 
-    // Current format first, then the older salt-based one.
-    const plain = await decrypt(content, key) ?? await decryptLegacy(content, key);
+    const plain = await decryptContent(message.content, key);
     if (plain == null) return; // not our ciphertext / wrong key
 
     updateMessage(message.channel_id, message.id, { content: plain });
+}
+
+// Decrypts the "replied to" preview shown above a reply. The preview is rendered
+// from ReferencedMessageStore, a cache separate from MessageStore, so decrypting
+// the original bubble doesn't update it on its own.
+async function tryDecryptReply(message: any) {
+    const { key } = settings.store;
+    if (!key) return;
+
+    const reference = message?.messageReference ?? message?.message_reference;
+    if (!reference) return;
+
+    const record = ReferencedMessageStore?.getMessageByReference?.(reference);
+    const refMsg = record?.message;
+    if (!refMsg || typeof refMsg.content !== "string") return;
+
+    const plain = await decryptContent(refMsg.content, key);
+    if (plain == null) return;
+
+    const channelId = reference.channel_id ?? refMsg.channel_id;
+    const newMsg = typeof refMsg.merge === "function" ? refMsg.merge({ content: plain }) : { ...refMsg, content: plain };
+    try {
+        const cache = ReferencedMessageStore.getOrCreate(channelId);
+        cache.set(refMsg.id, { ...record, message: newMsg });
+        ReferencedMessageStore.commit?.(cache);
+        ReferencedMessageStore.emitChange?.();
+    } catch {
+        // store internals changed — best effort, the main message still decrypts
+    }
 }
 
 // Re-decrypt the already-loaded messages in the open channel — used after the key

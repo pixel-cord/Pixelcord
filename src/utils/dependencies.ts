@@ -30,6 +30,11 @@ export const shikiOnigasmSrc = "https://cdn.jsdelivr.net/npm/@vap/shiki@0.10.3/d
 // @ts-expect-error
 export const getStegCloak = /* #__PURE__*/ makeLazy(() => import("https://cdn.jsdelivr.net/npm/stegcloak-dist@1.0.0/index.js"));
 
+// hash-wasm (Argon2id, a memory-hard KDF) — the wasm is inlined in the bundle, so
+// this single import is enough. Used by the EncryptedMessages plugin.
+// @ts-expect-error - remote ESM import, no local types
+export const getHashWasm = /* #__PURE__*/ makeLazy(() => import("https://cdn.jsdelivr.net/npm/hash-wasm@4.12.0/+esm"));
+
 export const getStylus = /* #__PURE__*/ makeLazy(async () => {
     const stylusScript = await fetch("https://cdn.jsdelivr.net/npm/stylus-lang-bundle@0.58.1/dist/stylus-renderer.min.js").then(r => r.text());
     // the stylus bundle doesn't have a header that checks for export conditions so we can just patch the script to
