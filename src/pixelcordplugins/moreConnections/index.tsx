@@ -15,6 +15,7 @@ import { useAuthorizationStore } from "./lib/auth";
 import { loadApiConfig } from "./lib/constants";
 import { installNativeConnections, uninstallNativeConnections } from "./lib/nativeAdd";
 import { PLATFORMS } from "./lib/platforms";
+import { installSettingsCard, refreshSettingsCard, uninstallSettingsCard } from "./lib/settingsCard";
 import { useUsersConnectionsStore } from "./lib/store";
 
 const settings = definePluginSettings({
@@ -112,6 +113,7 @@ export default definePlugin({
 
         installInjection();
         installNativeConnections();
+        installSettingsCard();
 
         // When our async data lands (batched fetch), drop the merge cache and nudge
         // profile consumers so the injected connections appear without reopening.
@@ -120,6 +122,7 @@ export default definePlugin({
                 lastUsersRef = state.users;
                 mergeCache.clear();
                 try { (UserProfileStore as any).emitChange(); } catch { }
+                refreshSettingsCard();
             }
         });
 
@@ -130,5 +133,6 @@ export default definePlugin({
     stop() {
         uninstallInjection();
         uninstallNativeConnections();
+        uninstallSettingsCard();
     }
 });
