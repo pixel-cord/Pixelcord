@@ -87,8 +87,17 @@ export function SettingsComponent() {
 
     return (
         <div style={{ display: "flex", gap: 8 }}>
-            <Button onClick={() => openModal(props => <ManageModal modalProps={props} />)}>Manage connections</Button>
+            <Button onClick={() => openManageConnections()}>Manage connections</Button>
             <Button color={Button.Colors.RED} onClick={() => auth.remove(UserStore.getCurrentUser().id)}>Log out</Button>
         </div>
     );
+}
+
+// Opens the connection editor from anywhere (e.g. Discord's native "Add
+// connection" modal), authorizing with Discord first if needed.
+export function openManageConnections() {
+    const auth = useAuthorizationStore.getState();
+    const open = () => openModal(props => <ManageModal modalProps={props} />);
+    if (auth.isAuthorized()) open();
+    else auth.authorize().then(open).catch(() => { });
 }
