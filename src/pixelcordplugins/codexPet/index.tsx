@@ -14,12 +14,15 @@ import { Checkbox, Forms, SearchableSelect, Slider, Text, useEffect, useMemo, us
 const COLS = 8;
 const ROWS = 9;
 
-const WALK_FRAMES: Array<[number, number]> = [
-    [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2]
-];
-const IDLE_FRAMES: Array<[number, number]> = [
-    [0, 3], [1, 3], [2, 3], [3, 3]
-];
+// Canonical codex-pets.net sprite layout: an 8x9 atlas with one animation state
+// per row, taken from the site's own player. We use the idle row plus the two
+// dedicated directional run rows, so asymmetric pets (e.g. Aigis) face the right
+// way instead of mirror-flipping a single row.
+const ROW_IDLE = 0;
+const ROW_RUN_RIGHT = 1;
+const ROW_RUN_LEFT = 2;
+const IDLE_FRAMES = 6;
+const RUN_FRAMES = 8;
 
 // The /assets/pets/<id>/spritesheet.webp path (no version segment) is stable, so
 // it makes a safe default for first run before the user picks their own pet.
@@ -65,7 +68,6 @@ interface CodexPetOptions {
     size: number;
     speed: number;
     fps: number;
-    flip: boolean;
     pixelated: boolean;
 }
 
@@ -80,7 +82,6 @@ class CodexPet {
     private walkFrame = 0;
     private idleFrame = 0;
     private idleTicks = 0;
-    private flipped = false;
     private raf = 0;
     private lastStep = 0;
     private destroyed = false;
@@ -118,7 +119,7 @@ class CodexPet {
             s.imageRendering = this.opts.pixelated ? "pixelated" : "auto";
             s.pointerEvents = "none";
             s.zIndex = "2147483647";
-            s.willChange = "left, top, background-position, transform";
+            s.willChange = "left, top, background-position";
 
             document.body.appendChild(this.el);
             document.addEventListener("mousemove", this.onMouseMove);
@@ -129,9 +130,7 @@ class CodexPet {
     }
 
     private setCell(col: number, row: number) {
-        const s = this.el.style;
-        s.backgroundPosition = `-${col * this.dispW}px -${row * this.dispH}px`;
-        s.transform = this.opts.flip && this.flipped ? "scaleX(-1)" : "";
+        this.el.style.backgroundPosition = `-${col * this.dispW}px -${row * this.dispH}px`;
     }
 
     private readonly tick = (t: number) => {
@@ -153,16 +152,16 @@ class CodexPet {
         if (dist < stopRadius) {
             this.idleTicks++;
             if (this.idleTicks % 8 === 0) this.idleFrame++;
-            const f = IDLE_FRAMES[this.idleFrame % IDLE_FRAMES.length];
-            this.setCell(f[0], f[1]);
+            this.setCell(this.idleFrame % IDLE_FRAMES, ROW_IDLE);
             return;
         }
 
         this.idleTicks = 0;
-        if (Math.abs(dx) > 1) this.flipped = dx < 0;
 
-        const f = WALK_FRAMES[this.walkFrame++ % WALK_FRAMES.length];
-        this.setCell(f[0], f[1]);
+        // The pet chases the cursor, so it moves right when the cursor is to its
+        // right (dx < 0). Pick the matching directional run row — no mirror flip.
+        const row = dx < 0 ? ROW_RUN_RIGHT : ROW_RUN_LEFT;
+        this.setCell(this.walkFrame++ % RUN_FRAMES, row);
 
         this.posX -= (dx / dist) * this.opts.speed;
         this.posY -= (dy / dist) * this.opts.speed;
@@ -199,7 +198,6 @@ function doReload() {
         size: Math.max(16, settings.store.size),
         speed: Math.max(1, settings.store.speed),
         fps: Math.max(1, settings.store.fps),
-        flip: settings.store.flip,
         pixelated: settings.store.pixelated
     });
 }
@@ -209,7 +207,7 @@ function reloadPet() {
     reloadTimer = setTimeout(doReload, 120);
 }
 
-function save(key: "size" | "speed" | "fps" | "flip" | "pixelated", value: number | boolean) {
+function save(key: "size" | "speed" | "fps" | "pixelated", value: number | boolean) {
     (settings.store as any)[key] = value;
     reloadPet();
 }
@@ -267,8 +265,8 @@ function PetPreview({ url }: { url: string; }) {
                 if (!alive) return;
                 if (t - last >= 1000 / 12) {
                     last = t;
-                    const f = WALK_FRAMES[frame++ % WALK_FRAMES.length];
-                    node.style.backgroundPosition = `-${f[0] * dispW}px -${f[1] * dispH}px`;
+                    const col = frame++ % RUN_FRAMES;
+                    node.style.backgroundPosition = `-${col * dispW}px -${ROW_RUN_RIGHT * dispH}px`;
                 }
                 raf = requestAnimationFrame(loop);
             };
@@ -286,8 +284,8 @@ function PetPreview({ url }: { url: string; }) {
 }
 
 function PetPicker() {
-    const { selectedSlug, size, speed, fps, flip, pixelated } = settings.use([
-        "selectedSlug", "size", "speed", "fps", "flip", "pixelated"
+    const { selectedSlug, size, speed, fps, pixelated } = settings.use([
+        "selectedSlug", "size", "speed", "fps", "pixelated"
     ]);
     const [pets, setPets] = useState<Pet[]>([]);
     const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
@@ -344,9 +342,6 @@ function PetPicker() {
                 <SliderRow label="Speed" value={speed} min={3} max={30} onChange={v => save("speed", v)} />
                 <SliderRow label="FPS" value={fps} min={4} max={30} onChange={v => save("fps", v)} />
                 <div className="vc-codexpet-toggles">
-                    <Checkbox value={flip} onChange={(_, v) => save("flip", v)} size={18}>
-                        <span className="vc-codexpet-check-label">Flip when walking</span>
-                    </Checkbox>
                     <Checkbox value={pixelated} onChange={(_, v) => save("pixelated", v)} size={18}>
                         <span className="vc-codexpet-check-label">Pixelated</span>
                     </Checkbox>
@@ -381,7 +376,6 @@ const settings = definePluginSettings({
     size: { type: OptionType.NUMBER, description: "Pet height in px", default: 50, hidden: true },
     speed: { type: OptionType.NUMBER, description: "Movement speed", default: 10, hidden: true },
     fps: { type: OptionType.NUMBER, description: "Animation FPS", default: 16, hidden: true },
-    flip: { type: OptionType.BOOLEAN, description: "Flip to face walk direction", default: true, hidden: true },
     pixelated: { type: OptionType.BOOLEAN, description: "Pixelated rendering", default: false, hidden: true }
 });
 
