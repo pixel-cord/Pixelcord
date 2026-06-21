@@ -113,7 +113,9 @@ export function mountHoverPopover() {
 
     container = document.createElement("div");
     container.className = "vc-voice-channel-log-hover-root";
-    document.body.appendChild(container);
+    // Mount inside Discord's themed root so the popover inherits its CSS variables
+    // (--background-floating, --text-muted, …); document.body is outside that scope.
+    (document.getElementById("app-mount") ?? document.body).appendChild(container);
 
     root = createRoot(container);
     root.render(<PopoverRoot />);
