@@ -46,6 +46,7 @@ function channelLabel(channel: Channel): string {
 function jobStatusText(job: CleanJob): string {
     switch (job.status) {
         case "queued": return "Queued";
+        case "scanning": return `Scanning… ${job.total ?? 0} found`;
         case "running": return job.total != null ? `${job.deleted} / ${job.total}` : `${job.deleted}…`;
         case "done": return `Done · ${job.deleted}`;
         case "cancelled": return `Cancelled · ${job.deleted}`;
@@ -62,7 +63,7 @@ function JobRow({ job, onCancel }: { job: CleanJob; onCancel: () => void; }) {
                 <span className={classes(cl("job-dot"), cl(`job-dot-${job.status}`))} />
                 <span className={cl("job-label")}>{job.label}</span>
                 <span className={cl("job-status")}>{jobStatusText(job)}</span>
-                {(job.status === "running" || job.status === "queued") && (
+                {(job.status === "running" || job.status === "queued" || job.status === "scanning") && (
                     <button className={cl("job-cancel")} onClick={onCancel}>Cancel</button>
                 )}
             </div>

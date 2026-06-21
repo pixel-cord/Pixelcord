@@ -124,6 +124,11 @@
     background: var(--text-muted, #949ba4);
 }
 
+.vc-msgcleaner-job-dot-scanning {
+    background: var(--status-warning, #f0b232);
+    animation: vc-msgcleaner-pulse 1.2s ease-in-out infinite;
+}
+
 .vc-msgcleaner-job-dot-running {
     background: var(--brand-500, #5865f2);
     animation: vc-msgcleaner-pulse 1.2s ease-in-out infinite;
