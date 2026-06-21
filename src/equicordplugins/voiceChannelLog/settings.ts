@@ -43,6 +43,11 @@ const settings = definePluginSettings({
         description: "Do not log blocked users.",
         default: false
     },
+    hoverPopover: {
+        type: OptionType.BOOLEAN,
+        description: "Show recent activity in a popover when hovering a voice channel in the sidebar.",
+        default: true
+    },
     soundboardFileType: {
         type: OptionType.SELECT,
         description: "File format for downloading soundboard sounds.",

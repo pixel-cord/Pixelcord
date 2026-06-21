@@ -13,6 +13,7 @@ import { ApplicationStore, ChannelStore, Menu, RelationshipStore, SelectedChanne
 
 import { LogIcon, OpenLogsButton } from "./components/LogsButton";
 import { openVoiceChannelLog } from "./components/VoiceChannelLogModal";
+import { mountHoverPopover, unmountHoverPopover } from "./hoverPopover";
 import { addLogEntry, setCallStartTime } from "./logs";
 import settings from "./settings";
 import { EmbeddedActivityEvent, PreviousVoiceState, SoundEvent, VoiceChannelLogEntry, VoiceState } from "./types";
@@ -242,6 +243,8 @@ export default definePlugin({
     },
 
     start() {
+        mountHoverPopover();
+
         clientOldChannelId = SelectedChannelStore.getVoiceChannelId() ?? undefined;
         if (clientOldChannelId) {
             clientJoinedAt = Date.now();
@@ -264,6 +267,7 @@ export default definePlugin({
     },
 
     stop() {
+        unmountHoverPopover();
         previousStates.clear();
         loggedActivities.clear();
         existingUsers.clear();
