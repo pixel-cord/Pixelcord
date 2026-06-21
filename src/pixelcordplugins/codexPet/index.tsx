@@ -8,28 +8,31 @@ import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
 import { PixelCordDevs } from "@utils/constants";
-import definePlugin, { OptionType, PluginNative } from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
 import { Checkbox, Forms, SearchableSelect, Slider, Text, useEffect, useMemo, useRef, useState } from "@webpack/common";
 
-const COLS = 8;
-const ROWS = 9;
-
-// Canonical codex-pets.net sprite layout: an 8x9 atlas with one animation state
-// per row, taken from the site's own player. We use the idle row plus the two
-// dedicated directional run rows, so asymmetric pets (e.g. Aigis) face the right
-// way instead of mirror-flipping a single row.
+// codex-pets.net renders every pet from one canonical atlas: an 8-wide / 9-tall
+// grid where row 0 is the idle loop and row 1 is the walk cycle facing RIGHT. We
+// only ever use those two rows. The dedicated "walk left" row 2 is unreliable —
+// plenty of pets ship it as a duplicate of row 1 instead of a real mirror, which
+// is why some pets used to moonwalk or only animate one way. Instead we play row 1
+// and flip it horizontally (CSS transform) for leftward travel, so every pet faces
+// the direction it moves regardless of how its sheet was authored.
+const DEFAULT_COLS = 8;
+const DEFAULT_ROWS = 9;
 const ROW_IDLE = 0;
-const ROW_RUN_RIGHT = 1;
-const ROW_RUN_LEFT = 2;
+const ROW_WALK = 1;
 const IDLE_FRAMES = 6;
-const RUN_FRAMES = 8;
+const WALK_FRAMES = 8;
 
-// The /assets/pets/<id>/spritesheet.webp path (no version segment) is stable, so
-// it makes a safe default for first run before the user picks their own pet.
+// First-run default before the user picks a pet. The non-versioned /assets path is
+// stable, so it's safe to hardcode.
 const DEFAULT_PET = {
     slug: "airi-white-v2",
     name: "Airi",
-    url: "https://codex-pets.net/assets/pets/airi-white-v2/spritesheet.webp"
+    url: "https://codex-pets.net/assets/pets/airi-white-v2/spritesheet.webp",
+    cols: DEFAULT_COLS,
+    rows: DEFAULT_ROWS
 };
 
 interface Pet {
@@ -37,12 +40,15 @@ interface Pet {
     name: string;
     url: string;
     desc?: string;
+    cols?: number;
+    rows?: number;
 }
 
-// codex-pets.net sends no Access-Control-Allow-Origin header, so a renderer fetch
-// of its manifest is blocked by CORS. The list is fetched in the main process
-// instead (see native.ts); the sprite images still load directly in the renderer.
-const Native = VencordNative.pluginHelpers.CodexPet as PluginNative<typeof import("./native")>;
+// The whole catalog is mirrored by our own API (api.pixelcord.com.br), which pulls
+// every codex-pets.net page once a day and serves it as a single, CORS-enabled JSON
+// array. That removes both the ~45-page pagination the client used to do on every
+// open and codex-pets.net's missing Access-Control-Allow-Origin header.
+const CATALOG_URL = "https://api.pixelcord.com.br/api/codex/pets";
 
 let petCache: Pet[] | null = null;
 let petInflight: Promise<Pet[]> | null = null;
@@ -50,11 +56,14 @@ let petInflight: Promise<Pet[]> | null = null;
 function fetchPets(): Promise<Pet[]> {
     if (petCache) return Promise.resolve(petCache);
     if (petInflight) return petInflight;
-    if (!Native) return Promise.reject(new Error("native unavailable"));
 
-    petInflight = Native.getPets()
-        .then(pets => {
-            if (!pets.length) throw new Error("no pets from codex-pets.net");
+    petInflight = fetch(CATALOG_URL, { headers: { accept: "application/json" } })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
+        .then((pets: Pet[]) => {
+            if (!Array.isArray(pets) || !pets.length) throw new Error("empty catalog");
             petCache = pets;
             return pets;
         })
@@ -65,6 +74,8 @@ function fetchPets(): Promise<Pet[]> {
 
 interface CodexPetOptions {
     url: string;
+    cols: number;
+    rows: number;
     size: number;
     speed: number;
     fps: number;
@@ -79,9 +90,14 @@ class CodexPet {
     private mouseY = this.posY;
     private dispW = 0;
     private dispH = 0;
+    private cols = DEFAULT_COLS;
+    private rows = DEFAULT_ROWS;
+    private walkFrames = WALK_FRAMES;
+    private idleFrames = IDLE_FRAMES;
     private walkFrame = 0;
     private idleFrame = 0;
     private idleTicks = 0;
+    private facing = 1; // 1 = right (atlas default), -1 = left (mirrored)
     private raf = 0;
     private lastStep = 0;
     private destroyed = false;
@@ -100,8 +116,15 @@ class CodexPet {
         img.onload = () => {
             if (this.destroyed) return;
 
-            const cellW = img.naturalWidth / COLS;
-            const cellH = img.naturalHeight / ROWS;
+            this.cols = Math.max(1, Math.round(this.opts.cols) || DEFAULT_COLS);
+            this.rows = Math.max(1, Math.round(this.opts.rows) || DEFAULT_ROWS);
+            // Each state's frames are left-aligned in its row; never step past the
+            // real frame count or we'd flash the row's empty padding cells.
+            this.walkFrames = Math.min(WALK_FRAMES, this.cols);
+            this.idleFrames = Math.min(IDLE_FRAMES, this.cols);
+
+            const cellW = img.naturalWidth / this.cols;
+            const cellH = img.naturalHeight / this.rows;
             this.dispH = this.opts.size;
             this.dispW = Math.max(1, Math.round(this.opts.size * (cellW / cellH)));
 
@@ -115,11 +138,11 @@ class CodexPet {
             s.height = `${this.dispH}px`;
             s.backgroundImage = `url("${this.opts.url}")`;
             s.backgroundRepeat = "no-repeat";
-            s.backgroundSize = `${COLS * this.dispW}px ${ROWS * this.dispH}px`;
+            s.backgroundSize = `${this.cols * this.dispW}px ${this.rows * this.dispH}px`;
             s.imageRendering = this.opts.pixelated ? "pixelated" : "auto";
             s.pointerEvents = "none";
             s.zIndex = "2147483647";
-            s.willChange = "left, top, background-position";
+            s.willChange = "left, top, background-position, transform";
 
             document.body.appendChild(this.el);
             document.addEventListener("mousemove", this.onMouseMove);
@@ -130,6 +153,9 @@ class CodexPet {
     }
 
     private setCell(col: number, row: number) {
+        // scaleX(facing) flips the whole element so the pet faces its travel
+        // direction; the background-position stays in unflipped atlas coords.
+        this.el.style.transform = `scaleX(${this.facing})`;
         this.el.style.backgroundPosition = `-${col * this.dispW}px -${row * this.dispH}px`;
     }
 
@@ -152,16 +178,19 @@ class CodexPet {
         if (dist < stopRadius) {
             this.idleTicks++;
             if (this.idleTicks % 8 === 0) this.idleFrame++;
-            this.setCell(this.idleFrame % IDLE_FRAMES, ROW_IDLE);
+            // Keep facing the last travel direction while idle.
+            this.setCell(this.idleFrame % this.idleFrames, ROW_IDLE);
             return;
         }
 
         this.idleTicks = 0;
 
-        // The pet chases the cursor, so it moves right when the cursor is to its
-        // right (dx < 0). Pick the matching directional run row — no mirror flip.
-        const row = dx < 0 ? ROW_RUN_RIGHT : ROW_RUN_LEFT;
-        this.setCell(this.walkFrame++ % RUN_FRAMES, row);
+        // Face the way we're about to move. dx = pet − cursor, so dx < 0 means the
+        // cursor is to our right and we chase right (atlas default, no flip). Only
+        // flip on a real horizontal component so near-vertical chases don't jitter.
+        if (Math.abs(dx) > 1) this.facing = dx < 0 ? 1 : -1;
+
+        this.setCell(this.walkFrame++ % this.walkFrames, ROW_WALK);
 
         this.posX -= (dx / dist) * this.opts.speed;
         this.posY -= (dy / dist) * this.opts.speed;
@@ -195,6 +224,8 @@ function doReload() {
 
     current = new CodexPet({
         url,
+        cols: Math.max(1, settings.store.selectedCols) || DEFAULT_COLS,
+        rows: Math.max(1, settings.store.selectedRows) || DEFAULT_ROWS,
         size: Math.max(16, settings.store.size),
         speed: Math.max(1, settings.store.speed),
         fps: Math.max(1, settings.store.fps),
@@ -235,7 +266,7 @@ function SliderRow({ label, value, min, max, onChange }: {
     );
 }
 
-function PetPreview({ url }: { url: string; }) {
+function PetPreview({ url, cols = DEFAULT_COLS, rows = DEFAULT_ROWS }: { url: string; cols?: number; rows?: number; }) {
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -247,26 +278,30 @@ function PetPreview({ url }: { url: string; }) {
         let last = 0;
         let alive = true;
 
+        const c = Math.max(1, Math.round(cols) || DEFAULT_COLS);
+        const r = Math.max(1, Math.round(rows) || DEFAULT_ROWS);
+        const frames = Math.min(WALK_FRAMES, c);
+
         const img = new Image();
         img.onload = () => {
             if (!alive || !ref.current) return;
             const node = ref.current;
-            const cellW = img.naturalWidth / COLS;
-            const cellH = img.naturalHeight / ROWS;
+            const cellW = img.naturalWidth / c;
+            const cellH = img.naturalHeight / r;
             const dispH = 110;
             const dispW = Math.max(1, Math.round(dispH * (cellW / cellH)));
 
             node.style.width = `${dispW}px`;
             node.style.height = `${dispH}px`;
             node.style.backgroundImage = `url("${url}")`;
-            node.style.backgroundSize = `${COLS * dispW}px ${ROWS * dispH}px`;
+            node.style.backgroundSize = `${c * dispW}px ${r * dispH}px`;
 
             const loop = (t: number) => {
                 if (!alive) return;
                 if (t - last >= 1000 / 12) {
                     last = t;
-                    const col = frame++ % RUN_FRAMES;
-                    node.style.backgroundPosition = `-${col * dispW}px -${ROW_RUN_RIGHT * dispH}px`;
+                    const col = frame++ % frames;
+                    node.style.backgroundPosition = `-${col * dispW}px -${ROW_WALK * dispH}px`;
                 }
                 raf = requestAnimationFrame(loop);
             };
@@ -278,7 +313,7 @@ function PetPreview({ url }: { url: string; }) {
             alive = false;
             cancelAnimationFrame(raf);
         };
-    }, [url]);
+    }, [url, cols, rows]);
 
     return <div ref={ref} className="vc-codexpet-sprite" />;
 }
@@ -306,6 +341,8 @@ function PetPicker() {
         settings.store.selectedSlug = p.slug;
         settings.store.selectedName = p.name;
         settings.store.selectedUrl = p.url;
+        settings.store.selectedCols = p.cols || DEFAULT_COLS;
+        settings.store.selectedRows = p.rows || DEFAULT_ROWS;
         reloadPet();
     }
 
@@ -317,8 +354,8 @@ function PetPicker() {
 
             {status === "error" ? (
                 <Forms.FormText className="vc-codexpet-empty">
-                    Couldn't load the pet list. This plugin needs its native CSP patch — make sure you're on the
-                    desktop app and have restarted after enabling it.
+                    Couldn't reach the pet catalog (api.pixelcord.com.br). Check your connection and try
+                    reopening settings.
                 </Forms.FormText>
             ) : (
                 <SearchableSelect
@@ -352,13 +389,15 @@ function PetPicker() {
 }
 
 function AboutPreview() {
-    const { selectedUrl, selectedName } = settings.use(["selectedUrl", "selectedName"]);
+    const { selectedUrl, selectedName, selectedCols, selectedRows } = settings.use([
+        "selectedUrl", "selectedName", "selectedCols", "selectedRows"
+    ]);
     if (!selectedUrl) return null;
 
     return (
         <div className="vc-codexpet-about">
             <div className="vc-codexpet-floating">
-                <PetPreview key={selectedUrl} url={selectedUrl} />
+                <PetPreview key={selectedUrl} url={selectedUrl} cols={selectedCols} rows={selectedRows} />
                 <Text variant="text-sm/semibold">{selectedName || "—"}</Text>
             </div>
         </div>
@@ -373,6 +412,8 @@ const settings = definePluginSettings({
     selectedSlug: { type: OptionType.STRING, description: "Selected pet slug", default: DEFAULT_PET.slug, hidden: true },
     selectedName: { type: OptionType.STRING, description: "Selected pet name", default: DEFAULT_PET.name, hidden: true },
     selectedUrl: { type: OptionType.STRING, description: "Selected pet spritesheet", default: DEFAULT_PET.url, hidden: true },
+    selectedCols: { type: OptionType.NUMBER, description: "Selected pet atlas columns", default: DEFAULT_PET.cols, hidden: true },
+    selectedRows: { type: OptionType.NUMBER, description: "Selected pet atlas rows", default: DEFAULT_PET.rows, hidden: true },
     size: { type: OptionType.NUMBER, description: "Pet height in px", default: 50, hidden: true },
     speed: { type: OptionType.NUMBER, description: "Movement speed", default: 10, hidden: true },
     fps: { type: OptionType.NUMBER, description: "Animation FPS", default: 16, hidden: true },
@@ -395,9 +436,11 @@ export default definePlugin({
             settings.store.selectedSlug = DEFAULT_PET.slug;
             settings.store.selectedName = DEFAULT_PET.name;
             settings.store.selectedUrl = DEFAULT_PET.url;
+            settings.store.selectedCols = DEFAULT_PET.cols;
+            settings.store.selectedRows = DEFAULT_PET.rows;
         }
-        // The pet itself only needs the stored URL; the full catalog is fetched
-        // lazily when the settings picker opens, not on every launch.
+        // The pet itself only needs the stored URL + grid; the full catalog is
+        // fetched lazily when the settings picker opens, not on every launch.
         doReload();
     },
 
