@@ -21,8 +21,8 @@ const ROW_SELECTOR = `[data-list-item-id^="${PREFIX}"]`;
 const POPOVER_SELECTOR = ".vc-voice-channel-log-popover";
 const VOICE_TYPES = new Set([ChannelType.GUILD_VOICE, ChannelType.GUILD_STAGE_VOICE]);
 
-const POPOVER_WIDTH = 340;
-const POPOVER_MAX_HEIGHT = 360;
+const POPOVER_WIDTH = 300;
+const POPOVER_MAX_HEIGHT = 320;
 const GAP = 8;
 const HIDE_DELAY = 200;
 

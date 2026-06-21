@@ -1,19 +1,23 @@
 .vc-voice-channel-log-popover {
     position: fixed;
     z-index: 3000;
-    width: 340px;
-    max-height: 360px;
+    width: 300px;
+    max-height: 320px;
     display: flex;
     flex-direction: column;
     background: var(--background-floating);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     box-shadow: var(--shadow-high);
     overflow: hidden;
+    font-size: 13px;
+    line-height: 1.3;
 }
 
-.vc-voice-channel-log-popover-header {
-    padding: 10px 12px;
-    font-size: 0.75rem;
+.vc-voice-channel-log-pop-header {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -24,17 +28,69 @@
     text-overflow: ellipsis;
 }
 
-.vc-voice-channel-log-popover-scroller {
-    padding: 4px 0;
-    overflow-y: auto;
-    max-height: 312px;
+.vc-voice-channel-log-pop-list {
+    max-height: 279px;
+    padding: 4px;
 }
 
-.vc-voice-channel-log-popover-empty {
-    padding: 16px;
+.vc-voice-channel-log-pop-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.vc-voice-channel-log-pop-row:hover {
+    background: var(--background-modifier-hover);
+}
+
+.vc-voice-channel-log-pop-time {
+    flex: 0 0 auto;
+    width: 34px;
+    font-size: 11px;
     color: var(--text-muted);
-    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* EventIcon reuses .vc-voice-channel-log-icon (20px) — keep it compact here. */
+.vc-voice-channel-log-popover .vc-voice-channel-log-icon {
+    width: 18px;
+    flex: 0 0 auto;
+}
+
+.vc-voice-channel-log-popover .vc-voice-channel-log-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.vc-voice-channel-log-pop-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    object-fit: cover;
+}
+
+.vc-voice-channel-log-pop-text {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-default);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-voice-channel-log-pop-name {
+    font-weight: 600;
+    color: var(--text-strong);
+}
+
+.vc-voice-channel-log-pop-empty {
+    padding: 16px;
     text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
 }
 
 .vc-voice-channel-log-hover-root {
