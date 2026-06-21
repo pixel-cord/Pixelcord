@@ -1,0 +1,46 @@
+.vc-voice-channel-log-popover {
+    position: fixed;
+    z-index: 3000;
+    width: 340px;
+    max-height: 360px;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-floating);
+    border-radius: 8px;
+    box-shadow: var(--shadow-high);
+    overflow: hidden;
+}
+
+.vc-voice-channel-log-popover-header {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-voice-channel-log-popover-scroller {
+    padding: 4px 0;
+    overflow-y: auto;
+    max-height: 312px;
+}
+
+.vc-voice-channel-log-popover-empty {
+    padding: 16px;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    text-align: center;
+}
+
+.vc-voice-channel-log-hover-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+}
