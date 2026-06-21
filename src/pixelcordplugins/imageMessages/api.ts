@@ -4,26 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { useAuthorizationStore } from "../moreConnections/lib/auth";
 import { BASE_URL } from "../moreConnections/lib/constants";
 
-// Uploads the rendered PNG to the Pixelcord API, which stores it on the CDN and
-// returns the public image URL. Reuses the Pixelcord OAuth token (the same one the
-// connections/badges features use), authorizing on first use if needed.
+// Uploads the rendered PNG to the Pixelcord API, which stores it on a Discord
+// channel and returns a proxied image link. No auth — uploads land in the bot's
+// own channel, so there's nothing per-user to gate.
 export async function uploadImageMessage(imageBase64: string): Promise<string> {
-    let { token } = useAuthorizationStore.getState();
-    if (!token) {
-        await useAuthorizationStore.getState().authorize();
-        token = useAuthorizationStore.getState().token;
-    }
-    if (!token) throw new Error("not authorized");
-
     const res = await fetch(`${BASE_URL}/api/image-message`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64 })
     });
 
