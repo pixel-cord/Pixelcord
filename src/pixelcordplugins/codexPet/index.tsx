@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
 import { PixelCordDevs } from "@utils/constants";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Checkbox, Forms, SearchableSelect, Slider, Text, useEffect, useMemo, useRef, useState } from "@webpack/common";
 
 const COLS = 8;
@@ -20,12 +20,6 @@ const WALK_FRAMES: Array<[number, number]> = [
 const IDLE_FRAMES: Array<[number, number]> = [
     [0, 3], [1, 3], [2, 3], [3, 3]
 ];
-
-const NET_API = "https://codex-pets.net/api/pets";
-const NET_PAGE_SIZE = 50; // codex-pets.net rejects anything larger with HTTP 400
-const NET_MAX_PAGES = 120; // safety cap so a misbehaving API can't loop forever
-const NET_CONCURRENCY = 6; // parallel page requests while paginating
-const REQUEST_TIMEOUT = 15_000;
 
 // The /assets/pets/<id>/spritesheet.webp path (no version segment) is stable, so
 // it makes a safe default for first run before the user picks their own pet.
@@ -42,78 +36,21 @@ interface Pet {
     desc?: string;
 }
 
+// codex-pets.net sends no Access-Control-Allow-Origin header, so a renderer fetch
+// of its manifest is blocked by CORS. The list is fetched in the main process
+// instead (see native.ts); the sprite images still load directly in the renderer.
+const Native = VencordNative.pluginHelpers.CodexPet as PluginNative<typeof import("./native")>;
+
 let petCache: Pet[] | null = null;
 let petInflight: Promise<Pet[]> | null = null;
-
-async function fetchJson(url: string): Promise<any> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-    try {
-        const res = await fetch(url, { headers: { accept: "application/json" }, signal: controller.signal });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return await res.json();
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-// codex-pets.net ships a standard 8x9 sprite atlas and keys each pet by `id`.
-function toPet(raw: any): Pet | null {
-    const slug = raw?.id ?? raw?.slug;
-    if (!slug || !raw?.spritesheetUrl) return null;
-    return {
-        slug: String(slug),
-        name: String(raw.displayName || slug),
-        url: String(raw.spritesheetUrl),
-        desc: raw.description ? String(raw.description) : ""
-    };
-}
-
-function toPets(list: any): Pet[] {
-    return (Array.isArray(list) ? list : []).map(toPet).filter((p): p is Pet => p !== null);
-}
-
-async function fetchNetPets(): Promise<Pet[]> {
-    try {
-        const first = await fetchJson(`${NET_API}?page=1&pageSize=${NET_PAGE_SIZE}`);
-        const pets = toPets(first?.pets);
-
-        const pageSize = Number(first?.pageSize) || NET_PAGE_SIZE;
-        const reported = Number(first?.totalPages) || Math.ceil((Number(first?.total) || 0) / pageSize) || 1;
-        const totalPages = Math.min(reported, NET_MAX_PAGES);
-
-        // Pages 2..totalPages, fetched in small concurrent batches.
-        for (let start = 2; start <= totalPages; start += NET_CONCURRENCY) {
-            const batch: Promise<Pet[]>[] = [];
-            for (let p = start; p < start + NET_CONCURRENCY && p <= totalPages; p++) {
-                batch.push(
-                    fetchJson(`${NET_API}?page=${p}&pageSize=${NET_PAGE_SIZE}`)
-                        .then(j => toPets(j?.pets))
-                        .catch(() => [])
-                );
-            }
-            for (const part of await Promise.all(batch)) pets.push(...part);
-        }
-        return pets;
-    } catch (e) {
-        console.error("[CodexPet] codex-pets.net failed:", e);
-        return [];
-    }
-}
 
 function fetchPets(): Promise<Pet[]> {
     if (petCache) return Promise.resolve(petCache);
     if (petInflight) return petInflight;
+    if (!Native) return Promise.reject(new Error("native unavailable"));
 
-    petInflight = fetchNetPets()
-        .then(net => {
-            // Drop any repeats by id (safety across paginated requests).
-            const byKey = new Map<string, Pet>();
-            for (const p of net) {
-                const key = p.slug.toLowerCase();
-                if (key && !byKey.has(key)) byKey.set(key, p);
-            }
-            const pets = [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
+    petInflight = Native.getPets()
+        .then(pets => {
             if (!pets.length) throw new Error("no pets from codex-pets.net");
             petCache = pets;
             return pets;
@@ -458,6 +395,13 @@ export default definePlugin({
 
     start() {
         started = true;
+        // Selections saved by the old codex-pet.com build point at sprites that
+        // are no longer whitelisted, so fall back to the current default.
+        if (settings.store.selectedUrl?.includes("codex-pet.com")) {
+            settings.store.selectedSlug = DEFAULT_PET.slug;
+            settings.store.selectedName = DEFAULT_PET.name;
+            settings.store.selectedUrl = DEFAULT_PET.url;
+        }
         // The pet itself only needs the stored URL; the full catalog is fetched
         // lazily when the settings picker opens, not on every launch.
         doReload();
