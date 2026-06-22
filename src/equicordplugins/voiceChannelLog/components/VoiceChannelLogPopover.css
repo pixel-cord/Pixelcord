@@ -22,7 +22,6 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    color: var(--text-muted);
     border-bottom: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
     color: var(--text-muted, #949ba4);
     white-space: nowrap;
