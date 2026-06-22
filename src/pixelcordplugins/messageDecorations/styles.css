@@ -1,0 +1,162 @@
+/* Chat-bar button: highlight when a decoration is active (matches the other plugins). */
+.vc-msgdeco-active {
+    color: var(--green-360);
+}
+
+/*
+ * The balloon. We style the message's real content node, so it hugs and
+ * stretches with the text on its own — no fixed size anywhere. Colours come
+ * from the decoration's palette via CSS custom properties.
+ */
+.vc-msgdeco-balloon {
+    position: relative;
+
+    /* top room for the character peeking over the rim */
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 26px;
+    box-sizing: border-box;
+    padding: 9px 15px;
+    border: 2.5px solid var(--vc-msgdeco-border, var(--background-modifier-accent));
+
+    /* chunky bottom rim for the layered TikTok look */
+    border-bottom-width: 5px;
+    border-radius: 20px;
+    background: var(--vc-msgdeco-bg, var(--background-secondary));
+    color: var(--vc-msgdeco-text, var(--text-normal));
+    box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+    overflow: visible;
+}
+
+/* The character art — a plain <img> peeking over the top edge, paws on the rim. It's a
+   child of the balloon, so it tracks the balloon's width as the text grows. */
+.vc-msgdeco-character {
+    position: absolute;
+    top: -30px;
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 2px 2px rgb(0 0 0 / 22%));
+    z-index: 1;
+}
+
+.vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] > .vc-msgdeco-character {
+    left: 4px;
+}
+
+.vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] > .vc-msgdeco-character {
+    right: 4px;
+}
+
+/* Bottom-anchored characters (e.g. the tongue frog) lie below the card and reach up to
+   hook the bottom rim, instead of peeking over the top. */
+.vc-msgdeco-balloon[data-vc-msgdeco-anchor="bottom"] {
+    margin-top: 4px;
+    margin-bottom: 28px;
+}
+
+.vc-msgdeco-balloon[data-vc-msgdeco-anchor="bottom"] > .vc-msgdeco-character {
+    top: auto;
+    bottom: -30px;
+}
+
+/* Picker modal */
+.vc-msgdeco-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.vc-msgdeco-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 6px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.vc-msgdeco-tile:hover {
+    background: var(--background-secondary-alt);
+}
+
+.vc-msgdeco-tile-active {
+    border-color: var(--brand-500, var(--brand-experiment));
+}
+
+.vc-msgdeco-preview {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 40px;
+    margin-top: 16px;
+    border: 2px solid;
+    border-bottom-width: 4px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    overflow: visible;
+}
+
+.vc-msgdeco-preview-char {
+    position: absolute;
+    top: -18px;
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.vc-msgdeco-preview[data-vc-msgdeco-pos="left"] > .vc-msgdeco-preview-char {
+    left: 2px;
+}
+
+.vc-msgdeco-preview[data-vc-msgdeco-pos="right"] > .vc-msgdeco-preview-char {
+    right: 2px;
+}
+
+.vc-msgdeco-preview[data-vc-msgdeco-anchor="bottom"] {
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.vc-msgdeco-preview[data-vc-msgdeco-anchor="bottom"] > .vc-msgdeco-preview-char {
+    top: auto;
+    bottom: -16px;
+}
+
+.vc-msgdeco-none {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 40px;
+    margin-top: 16px;
+    border: 2px dashed var(--background-modifier-accent);
+    border-radius: 14px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.vc-msgdeco-tile-name {
+    max-width: 90px;
+    overflow: hidden;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

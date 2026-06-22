@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- tongue reaching up to hook over the card's bottom edge -->
+  <path d="M33 38 C 45 34, 54 26, 51 14 C 49 7, 40 7, 40 14 C 40 19, 46 19, 47 14" fill="none" stroke="#ec6f87" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- back feet -->
+  <ellipse cx="11" cy="55" rx="8" ry="4.5" fill="#4aa653"/>
+  <ellipse cx="44" cy="55" rx="8" ry="4.5" fill="#4aa653"/>
+  <!-- body -->
+  <ellipse cx="27" cy="46" rx="22" ry="15" fill="#5bbf63"/>
+  <!-- eye bulges -->
+  <circle cx="18" cy="31" r="8.5" fill="#5bbf63"/>
+  <circle cx="35" cy="31" r="8.5" fill="#5bbf63"/>
+  <circle cx="18" cy="30" r="4.6" fill="#fff"/>
+  <circle cx="35" cy="30" r="4.6" fill="#fff"/>
+  <circle cx="19" cy="31" r="2.5" fill="#1f3a22"/>
+  <circle cx="36" cy="31" r="2.5" fill="#1f3a22"/>
+  <!-- smile -->
+  <path d="M17 44 q10 7 20 0" stroke="#2e7a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <circle cx="13" cy="47" r="3" fill="#8fdb98" opacity=".75"/>
+  <circle cx="41" cy="47" r="3" fill="#8fdb98" opacity=".75"/>
+</svg>
