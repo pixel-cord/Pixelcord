@@ -101,7 +101,7 @@ const PANDA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <path d="M32 42 v2 M32 44 q-2.5 2 -4 0 M32 44 q2.5 2 4 0" stroke="#2f3338" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 </svg>`;
 
-// Lies below the card; its tongue curls up and hooks over the bottom rim (anchor: bottom).
+// Cheeky frog whose tongue curls up — shown as a normal inline avatar like the rest.
 const FROG_TONGUE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <path d="M33 38 C 45 34, 54 26, 51 14 C 49 7, 40 7, 40 14 C 40 19, 46 19, 47 14" fill="none" stroke="#ec6f87" stroke-width="4.5" stroke-linecap="round"/>
   <ellipse cx="11" cy="55" rx="8" ry="4.5" fill="#4aa653"/><ellipse cx="44" cy="55" rx="8" ry="4.5" fill="#4aa653"/>
@@ -131,5 +131,5 @@ export const BUILTIN_DECORATIONS: Decoration[] = [
     { id: "bunny", name: "Coelhinho", character: svg(BUNNY), borderColor: "#f192b2", backgroundColor: "#ffeaf2", textColor: "#7a2c4a", position: "right" },
     { id: "panda", name: "Panda", character: svg(PANDA), borderColor: "#5a636e", backgroundColor: "#f1f3f5", textColor: "#2b3138", position: "left" },
     { id: "duck", name: "Patinho", character: svg(DUCK), borderColor: "#f2c21f", backgroundColor: "#fff7da", textColor: "#6b5200", position: "right" },
-    { id: "frog-tongue", name: "Sapo Língua", character: svg(FROG_TONGUE), borderColor: "#4fae57", backgroundColor: "#e7f7e2", textColor: "#1f5a28", position: "left", anchor: "bottom" }
+    { id: "frog-tongue", name: "Sapo Língua", character: svg(FROG_TONGUE), borderColor: "#4fae57", backgroundColor: "#e7f7e2", textColor: "#1f5a28", position: "left" }
 ];

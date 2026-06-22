@@ -67,7 +67,6 @@ function PickerModal({ modalProps }: { modalProps: RenderModalProps; }) {
                                     <div
                                         className={cl("preview")}
                                         data-vc-msgdeco-pos={d.position}
-                                        data-vc-msgdeco-anchor={d.anchor ?? "top"}
                                         // Colours are validated hex from the API, safe to inline.
                                         style={{
                                             borderColor: d.borderColor,

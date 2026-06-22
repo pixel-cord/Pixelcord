@@ -17,11 +17,8 @@ export interface Decoration {
     borderColor: string;
     backgroundColor: string;
     textColor: string;
-    /** Which side the character sits on. */
+    /** Which side the character sits on, inside the balloon. */
     position: "left" | "right";
-    /** Where it sits vertically: peeking over the top rim, or below holding the card
-        (e.g. the tongue frog). Defaults to "top". */
-    anchor?: "top" | "bottom";
 }
 
 const logger = new Logger("MessageDecorations");
@@ -49,7 +46,7 @@ function isSafeAssetUrl(url: unknown): url is string {
 // position must be one of the two anchors.
 function sanitize(entry: any): Decoration | null {
     if (!entry || typeof entry !== "object") return null;
-    const { id, name, character, borderColor, backgroundColor, textColor, position, anchor } = entry;
+    const { id, name, character, borderColor, backgroundColor, textColor, position } = entry;
 
     if (!ID_RE.test(id)) return null;
     if (!isSafeAssetUrl(character)) return null;
@@ -63,8 +60,7 @@ function sanitize(entry: any): Decoration | null {
         borderColor,
         backgroundColor,
         textColor,
-        position,
-        anchor: anchor === "bottom" ? "bottom" : "top"
+        position
     };
 }
 

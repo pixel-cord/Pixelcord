@@ -59,7 +59,6 @@ function DecorationAccessory({ message }: { message: any; }) {
 
         content.classList.add(cl("balloon"));
         content.dataset.vcMsgdecoPos = deco.position;
-        content.dataset.vcMsgdecoAnchor = deco.anchor ?? "top";
         // Colours arrive as CSS custom properties. They're validated hex (see api.ts),
         // and setProperty values can't break out of the declaration anyway.
         content.style.setProperty("--vc-msgdeco-border", deco.borderColor);
@@ -82,7 +81,6 @@ function DecorationAccessory({ message }: { message: any; }) {
         return () => {
             content.classList.remove(cl("balloon"));
             delete content.dataset.vcMsgdecoPos;
-            delete content.dataset.vcMsgdecoAnchor;
             content.style.removeProperty("--vc-msgdeco-border");
             content.style.removeProperty("--vc-msgdeco-bg");
             content.style.removeProperty("--vc-msgdeco-text");
