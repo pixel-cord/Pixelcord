@@ -124,12 +124,12 @@ const DUCK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 
 export const BUILTIN_DECORATIONS: Decoration[] = [
     { id: "bear-cub", name: "Ursinho", character: svg(BEAR), borderColor: "#d39a5a", backgroundColor: "#fff3e3", textColor: "#5a3a1a", position: "left" },
-    { id: "orange-cat", name: "Gatinho", character: svg(CAT), borderColor: "#f0a23c", backgroundColor: "#fff6d9", textColor: "#6b4512", position: "right" },
+    { id: "orange-cat", name: "Gatinho", character: svg(CAT), borderColor: "#f0a23c", backgroundColor: "#fff6d9", textColor: "#6b4512", position: "left" },
     { id: "green-frog", name: "Sapinho", character: svg(FROG), borderColor: "#4fae57", backgroundColor: "#e7f7e2", textColor: "#1f5a28", position: "left" },
-    { id: "blue-puppy", name: "Cachorrinho", character: svg(PUPPY), borderColor: "#84acd8", backgroundColor: "#e9f2fc", textColor: "#234a73", position: "right" },
+    { id: "blue-puppy", name: "Cachorrinho", character: svg(PUPPY), borderColor: "#84acd8", backgroundColor: "#e9f2fc", textColor: "#234a73", position: "left" },
     { id: "capybara", name: "Capivara", character: svg(CAPYBARA), borderColor: "#b0894f", backgroundColor: "#f3e8d5", textColor: "#5a3f1e", position: "left" },
-    { id: "bunny", name: "Coelhinho", character: svg(BUNNY), borderColor: "#f192b2", backgroundColor: "#ffeaf2", textColor: "#7a2c4a", position: "right" },
+    { id: "bunny", name: "Coelhinho", character: svg(BUNNY), borderColor: "#f192b2", backgroundColor: "#ffeaf2", textColor: "#7a2c4a", position: "left" },
     { id: "panda", name: "Panda", character: svg(PANDA), borderColor: "#5a636e", backgroundColor: "#f1f3f5", textColor: "#2b3138", position: "left" },
-    { id: "duck", name: "Patinho", character: svg(DUCK), borderColor: "#f2c21f", backgroundColor: "#fff7da", textColor: "#6b5200", position: "right" },
+    { id: "duck", name: "Patinho", character: svg(DUCK), borderColor: "#f2c21f", backgroundColor: "#fff7da", textColor: "#6b5200", position: "left" },
     { id: "frog-tongue", name: "Sapo Língua", character: svg(FROG_TONGUE), borderColor: "#4fae57", backgroundColor: "#e7f7e2", textColor: "#1f5a28", position: "left" }
 ];

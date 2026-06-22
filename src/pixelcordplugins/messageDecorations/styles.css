@@ -14,22 +14,23 @@
     position: relative;
     display: inline-block;
     max-width: min(100%, 540px);
-    padding: 7px 14px;
+    margin: 2px 0;
+    padding: 6px 13px;
     border: 2px solid var(--vc-msgdeco-border, var(--background-modifier-accent));
-    border-radius: 16px;
+    border-radius: 15px;
     background: var(--vc-msgdeco-bg, var(--background-secondary));
     color: var(--vc-msgdeco-text, var(--text-normal));
     box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
     overflow-wrap: anywhere;
 }
 
-/* Reserve a column for the character on its side so the text never sits under it. */
+/* Reserve a snug column for the character on its side so the text never sits under it. */
 .vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] {
-    padding-left: 50px;
+    padding-left: 42px;
 }
 
 .vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] {
-    padding-right: 50px;
+    padding-right: 42px;
 }
 
 /* The character — a plain <img> anchored to a bottom corner of the card, out of the text
@@ -39,8 +40,8 @@
 .vc-msgdeco-character {
     position: absolute;
     bottom: 3px;
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     object-fit: contain;
     pointer-events: none;
     user-select: none;
@@ -66,8 +67,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     gap: 12px;
-    max-height: 360px;
-    overflow-y: auto;
     padding: 4px;
 }
 
