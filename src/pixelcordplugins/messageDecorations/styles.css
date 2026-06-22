@@ -4,53 +4,40 @@
 }
 
 /*
- * The balloon = the message's real content node. inline-block + fit-content so it hugs
- * and stretches with the text and wraps normally. Discord clips anything that leaves a
- * message row, so — unlike TikTok — the character can't peek outside: it lives INSIDE
- * the balloon, in reserved padding, where nothing clips it.
+ * The balloon = the message's real content node. inline-block so it hugs and stretches
+ * with the text and wraps normally. The character flows inline next to the text (see
+ * below), so there's no absolute positioning, no reserved padding, and nothing for
+ * Discord to clip at the edges.
  */
 .vc-msgdeco-balloon {
-    position: relative;
     display: inline-block;
-    width: fit-content;
     max-width: 100%;
-    box-sizing: border-box;
-    padding: 7px 14px;
+    padding: 6px 13px;
     border: 2px solid var(--vc-msgdeco-border, var(--background-modifier-accent));
-    border-radius: 16px;
+    border-radius: 15px;
     background: var(--vc-msgdeco-bg, var(--background-secondary));
     color: var(--vc-msgdeco-text, var(--text-normal));
     box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
 
-/* Reserve room for the character on its side. */
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] {
-    padding-left: 46px;
-}
-
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] {
-    padding-right: 46px;
-}
-
-/* The character — a plain <img>, vertically centred inside the reserved padding so it
-   reads like a little avatar next to the text and is never clipped. */
+/* The character — a plain <img> flowing inline with the text, vertically centred on the
+   line. Inline means it's always inside the balloon and never clipped, on either side. */
 .vc-msgdeco-character {
-    position: absolute;
-    top: 50%;
-    width: 32px;
-    height: 32px;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
-    transform: translateY(-50%);
+    vertical-align: middle;
     pointer-events: none;
     user-select: none;
 }
 
 .vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] > .vc-msgdeco-character {
-    left: 9px;
+    margin-right: 7px;
 }
 
 .vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] > .vc-msgdeco-character {
-    right: 9px;
+    margin-left: 7px;
 }
 
 /* Picker modal */
@@ -87,50 +74,40 @@
 }
 
 .vc-msgdeco-preview {
-    position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 88px;
-    height: 38px;
+    gap: 6px;
+    min-height: 38px;
+    padding: 5px 12px;
     border: 2px solid;
     border-radius: 14px;
     font-size: 13px;
     font-weight: 600;
 }
 
-.vc-msgdeco-preview[data-vc-msgdeco-pos="left"] {
-    padding-left: 26px;
-}
-
-.vc-msgdeco-preview[data-vc-msgdeco-pos="right"] {
-    padding-right: 26px;
-}
-
 .vc-msgdeco-preview-char {
-    position: absolute;
-    top: 50%;
-    width: 26px;
-    height: 26px;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
-    transform: translateY(-50%);
     pointer-events: none;
 }
 
 .vc-msgdeco-preview[data-vc-msgdeco-pos="left"] > .vc-msgdeco-preview-char {
-    left: 6px;
+    order: -1;
 }
 
 .vc-msgdeco-preview[data-vc-msgdeco-pos="right"] > .vc-msgdeco-preview-char {
-    right: 6px;
+    order: 1;
 }
 
 .vc-msgdeco-none {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 88px;
-    height: 38px;
+    min-width: 72px;
+    min-height: 38px;
+    padding: 5px 12px;
     border: 2px dashed var(--background-modifier-accent);
     border-radius: 14px;
     color: var(--text-muted);
