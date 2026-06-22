@@ -70,12 +70,8 @@ const PixelCordContributorBadge: ProfileBadge = {
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowPixelCordContributorBadge(userId),
     onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId)),
-    props: {
-        style: {
-            borderRadius: "50%",
-            transform: "scale(0.9)"
-        }
-    },
+    // No props.style: Pixelcord badges render at the native badge size and keep
+    // the uploaded image's original shape (no scale-down, no circular crop).
 };
 
 const UserPluginContributorBadge: ProfileBadge = {
@@ -345,12 +341,8 @@ export default definePlugin({
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
-            props: {
-                style: {
-                    borderRadius: "50%",
-                    transform: "scale(0.9)"
-                }
-            },
+            // No props.style: render at native badge size, keep the uploaded
+            // image's original shape (no scale-down, no circular crop).
             onContextMenu(event, badge) {
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             }
