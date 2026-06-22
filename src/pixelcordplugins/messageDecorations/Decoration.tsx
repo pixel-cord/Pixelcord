@@ -66,20 +66,16 @@ function DecorationAccessory({ message }: { message: any; }) {
         content.style.setProperty("--vc-msgdeco-text", deco.textColor);
 
         // The character is a plain <img>, never inline SVG, so even an SVG asset loads in
-        // image mode with no script execution. It flows inline with the text (like a
-        // sticker next to the words) instead of being absolutely positioned — that way
-        // Discord can never clip it at the balloon edge, on either side.
+        // image mode with no script execution. It's anchored to a bottom corner of the
+        // balloon (see CSS) — out of the text flow — so it stays put on short and long
+        // messages alike and is never clipped. CSS handles which side via data-pos, so
+        // here we just make sure it exists as a child.
         let character = content.querySelector<HTMLImageElement>(`:scope > .${cl("character")}`);
         if (!character) {
             character = document.createElement("img");
             character.className = cl("character");
             character.alt = "";
             character.setAttribute("aria-hidden", "true");
-        }
-        // Put it before the text for "left", after it for "right".
-        if (deco.position === "left") {
-            if (content.firstChild !== character) content.insertBefore(character, content.firstChild);
-        } else if (content.lastChild !== character) {
             content.appendChild(character);
         }
         if (character.src !== deco.character) character.src = deco.character;
