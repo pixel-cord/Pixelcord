@@ -161,10 +161,17 @@ function tick() {
 
     const pos = currentPosition();
 
-    // song finished and nothing took over → clear
-    if (currentDuration > 0 && pos >= currentDuration - 250) {
-        clearStatus();
-        return;
+    // Song finished → clear the status (back to nothing until a new song).
+    // While playing we let the last lyric show right up to the end (tight 250ms
+    // margin). When playback has stopped the reported position is frozen and may
+    // sit a bit short of the real end, so we use a wider margin to still detect
+    // the end. A genuine mid-song pause stays well below this and keeps the lyric.
+    if (currentDuration > 0) {
+        const endMargin = isPlaying ? 250 : 2500;
+        if (pos >= currentDuration - endMargin) {
+            clearStatus();
+            return;
+        }
     }
 
     const now = Date.now();
