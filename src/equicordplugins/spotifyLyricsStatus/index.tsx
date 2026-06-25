@@ -49,6 +49,11 @@ const settings = definePluginSettings({
         description: "Emoji shown next to the lyric (leave empty for none)",
         default: "🎵"
     },
+    onlySyncedLyrics: {
+        type: OptionType.BOOLEAN,
+        description: "Only use lyrics that are actually time-synced. When a song's lyrics aren't synced, don't show out-of-sync text (falls back to the track name or nothing)",
+        default: true
+    },
     fallbackToTrackName: {
         type: OptionType.BOOLEAN,
         description: "When a song has no synced lyrics, show \"Song — Artist\" instead of nothing",
@@ -94,7 +99,8 @@ async function fetchLyrics(trackId: string): Promise<SyncedLyric[] | null> {
         if (!res.ok) return null;
 
         const json = await res.json();
-        const lines = json?.data?.lines;
+        const data = json?.data;
+        const lines = data?.lines;
         if (!Array.isArray(lines) || lines.length < 2) return null;
 
         const parsed: SyncedLyric[] = lines.map((l: any) => {
@@ -104,6 +110,14 @@ async function fetchLyrics(trackId: string): Promise<SyncedLyric[] | null> {
                 text: (words === "" || words === "♪") ? null : words
             };
         }).filter((l: SyncedLyric) => Number.isFinite(l.time));
+
+        // When the lyrics aren't actually time-synced, every line sits at 0ms —
+        // showing them would just freeze on the wrong line. If the user only
+        // wants synced lyrics, drop these so we fall back to the track name.
+        if (settings.store.onlySyncedLyrics) {
+            const isSynced = data?.syncType === "LINE_SYNCED" && parsed.some(l => l.time > 0);
+            if (!isSynced) return null;
+        }
 
         return parsed.length >= 2 ? parsed : null;
     } catch (e) {
