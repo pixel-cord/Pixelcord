@@ -14,10 +14,13 @@
     position: relative;
     display: inline-block;
     max-width: min(100%, 540px);
-    /* Only vertical margin — a shorthand `margin: 2px 0` would zero margin-left and wipe out
-       Discord's content indent, pulling the balloon to the far left (out of line with normal
-       messages). margin-block leaves the horizontal indent untouched. */
+    /* Discord's .messageContent has `margin-left: -72px` (its box spills left into the avatar
+       gutter, and a `padding-left: 72px` then puts the text back at the indent). Our balloon
+       overrides that padding, so the leftover negative margin drags the whole bubble ~72px to
+       the far left, out of line with normal messages. Force margin-left back to 0 (!important
+       to beat Discord's own class) so the bubble starts at the normal message indent. */
     margin-block: 2px;
+    margin-left: 0 !important;
     padding: 6px 13px;
     border: 2px solid var(--vc-msgdeco-border, var(--background-modifier-accent));
     border-radius: 15px;
