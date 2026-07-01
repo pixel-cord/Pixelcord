@@ -8,15 +8,15 @@ import { Paragraph } from "@components/Paragraph";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, showToast, Toasts, useEffect, useState } from "@webpack/common";
+import { Modal, openModal, Select, showToast, Toasts, useEffect, useState } from "@webpack/common";
 
 import { Decoration, getCatalog, loadCatalog } from "./api";
-import { settings } from "./settings";
+import { settings, STYLES } from "./settings";
 
 const cl = classNameFactory("vc-msgdeco-");
 
 function PickerModal({ modalProps }: { modalProps: RenderModalProps; }) {
-    const { activeDecorationId, style: activeStyle } = settings.use(["activeDecorationId", "style"]);
+    const { activeDecorationId, activeStyle } = settings.use(["activeDecorationId", "activeStyle"]);
     const [items, setItems] = useState<Decoration[]>(getCatalog());
     const [loading, setLoading] = useState(!getCatalog().length);
 
@@ -46,23 +46,13 @@ function PickerModal({ modalProps }: { modalProps: RenderModalProps; }) {
 
                 <div className={cl("styles")}>
                     <span className={cl("styles-label")}>Style</span>
-                    <div className={cl("styles-seg")}>
-                        <button
-                            type="button"
-                            className={cl("styles-opt", activeStyle === "tiktok" && "styles-opt-active")}
-                            onClick={() => { settings.store.style = "tiktok"; }}
-                            title="Your normal Discord avatar stays outside the bubble"
-                        >
-                            TikTok
-                        </button>
-                        <button
-                            type="button"
-                            className={cl("styles-opt", activeStyle === "pixelcord" && "styles-opt-active")}
-                            onClick={() => { settings.store.style = "pixelcord"; }}
-                            title="Avatar tucked inside the bubble with the character"
-                        >
-                            Pixelcord
-                        </button>
+                    <div className={cl("styles-select")}>
+                        <Select
+                            options={STYLES.map(s => ({ label: s.label, value: s.value }))}
+                            isSelected={v => v === activeStyle}
+                            select={v => { settings.store.activeStyle = v; }}
+                            serialize={v => v}
+                        />
                     </div>
                 </div>
 

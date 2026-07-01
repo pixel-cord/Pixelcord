@@ -86,7 +86,7 @@ export default definePlugin({
         const id = settings.store.activeDecorationId;
         if (!id || !message.content) return;
 
-        const marker = encodeMarker(id);
+        const marker = encodeMarker(id, settings.store.activeStyle);
         if (!marker) return;
 
         // Stay within Discord's 2000-char limit — if the marker wouldn't fit, send the
