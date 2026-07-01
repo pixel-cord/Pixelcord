@@ -16,7 +16,7 @@ import { settings } from "./settings";
 const cl = classNameFactory("vc-msgdeco-");
 
 function PickerModal({ modalProps }: { modalProps: RenderModalProps; }) {
-    const { activeDecorationId } = settings.use(["activeDecorationId"]);
+    const { activeDecorationId, style: activeStyle } = settings.use(["activeDecorationId", "style"]);
     const [items, setItems] = useState<Decoration[]>(getCatalog());
     const [loading, setLoading] = useState(!getCatalog().length);
 
@@ -43,6 +43,28 @@ function PickerModal({ modalProps }: { modalProps: RenderModalProps; }) {
                     Pick a frame for your next messages. Everyone using Pixelcord sees it; everyone else just
                     sees your normal text.
                 </Paragraph>
+
+                <div className={cl("styles")}>
+                    <span className={cl("styles-label")}>Style</span>
+                    <div className={cl("styles-seg")}>
+                        <button
+                            type="button"
+                            className={cl("styles-opt", activeStyle === "tiktok" && "styles-opt-active")}
+                            onClick={() => { settings.store.style = "tiktok"; }}
+                            title="Your normal Discord avatar stays outside the bubble"
+                        >
+                            TikTok
+                        </button>
+                        <button
+                            type="button"
+                            className={cl("styles-opt", activeStyle === "pixelcord" && "styles-opt-active")}
+                            onClick={() => { settings.store.style = "pixelcord"; }}
+                            title="Avatar tucked inside the bubble with the character"
+                        >
+                            Pixelcord
+                        </button>
+                    </div>
+                </div>
 
                 {loading && !items.length
                     ? <Paragraph>Loading…</Paragraph>

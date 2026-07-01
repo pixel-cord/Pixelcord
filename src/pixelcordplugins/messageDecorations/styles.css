@@ -113,6 +113,50 @@
 }
 
 /* Picker modal */
+.vc-msgdeco-styles {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.vc-msgdeco-styles-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--header-secondary);
+    text-transform: uppercase;
+}
+
+/* Segmented control for the TikTok / Pixelcord style toggle. */
+.vc-msgdeco-styles-seg {
+    display: inline-flex;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--background-secondary);
+}
+
+.vc-msgdeco-styles-opt {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vc-msgdeco-styles-opt:hover {
+    color: var(--text-normal);
+}
+
+.vc-msgdeco-styles-opt-active {
+    background: var(--brand-500, var(--brand-experiment));
+    color: #fff;
+}
+
 .vc-msgdeco-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
