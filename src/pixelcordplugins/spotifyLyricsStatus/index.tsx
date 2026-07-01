@@ -263,7 +263,7 @@ async function onPlayerState(state: PlayerState) {
 export default definePlugin({
     name: "SpotifyLyricsStatus",
     description: "Syncs your Discord custom status with the lyrics of the song you're playing on Spotify, line by line. Clears the status when the song ends.",
-    authors: [PixelCordDevs.luvygor],
+    authors: [PixelCordDevs.myvings],
     tags: ["Activity", "Media", "Customisation"],
     dependencies: ["UserSettingsAPI"],
     settings,

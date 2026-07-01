@@ -423,7 +423,7 @@ const settings = definePluginSettings({
 export default definePlugin({
     name: "CodexPet",
     description: "A pet that follows your cursor, with thousands of characters from codex-pets.net. Pick one and preview it right in the settings.",
-    authors: [PixelCordDevs.outlayer],
+    authors: [PixelCordDevs.myvings],
     tags: ["Fun", "Appearance", "Customisation"],
     settings,
     settingsAboutComponent: AboutPreview,

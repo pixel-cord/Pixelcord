@@ -151,7 +151,7 @@ function onFullscreenChange() {
 export default definePlugin({
     name: "FullscreenStream",
     description: "Watch screen-share streams in true fullscreen that fills the entire screen with no black bars. Double-click a stream (or press F) to toggle.",
-    authors: [PixelCordDevs.outlayer],
+    authors: [PixelCordDevs.myvings],
     tags: ["Voice", "Media", "Appearance"],
     settings,
 

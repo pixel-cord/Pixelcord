@@ -1352,14 +1352,6 @@ export const PixelCordDevs = Object.freeze({
     myvings: {
         name: "myvings",
         id: 73598582153805824n
-    },
-    outlayer: {
-        name: "outlayer",
-        id: 1499140821696647301n
-    },
-    luvygor: {
-        name: "luvygor",
-        id: 1499140821696647301n
     }
 } satisfies Record<string, Dev>);
 

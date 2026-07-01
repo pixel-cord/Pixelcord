@@ -31,7 +31,7 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: {
 export default definePlugin({
     name: "ContactNotes",
     description: "Right-click any user to keep private notes, tags and reminders about them. Reminders ping you with a shortcut to their DM.",
-    authors: [PixelCordDevs.outlayer],
+    authors: [PixelCordDevs.myvings],
     tags: ["Friends", "Utility"],
     settings,
 

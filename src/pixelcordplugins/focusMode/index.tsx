@@ -56,7 +56,7 @@ function FocusPopoutButton() {
 export default definePlugin({
     name: "FocusMode",
     description: "A timed focus session that hides unread badges, the members list and dims the server list so you can concentrate.",
-    authors: [PixelCordDevs.outlayer],
+    authors: [PixelCordDevs.myvings],
     dependencies: ["HeaderBarAPI"],
     tags: ["Utility"],
     settings,

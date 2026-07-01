@@ -51,7 +51,7 @@ const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
 export default definePlugin({
     name: "MessageDecorations",
     description: "Wrap your messages in a TikTok-style frame with a character — chosen per message and visible to everyone using Pixelcord. Pick one from the chat button.",
-    authors: [PixelCordDevs.myvings, PixelCordDevs.outlayer],
+    authors: [PixelCordDevs.myvings],
     // ChatInputButtonAPI: the picker button. MessageUpdaterAPI: re-render a message once
     // we've decoded its marker. MessageAccessoriesAPI: the per-message render hook that
     // turns the message into the decorated balloon.
