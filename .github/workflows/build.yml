@@ -46,7 +46,7 @@ jobs:
                   pnpm generateDevsList dist/devs.json
 
             - name: Publish desktop build to the latest release
-              if: ${{ vars.ACT == 'false' }}
+              if: ${{ !env.ACT }}
               run: |
                   # The installer CLI (Pixelotl) reads /releases/latest and downloads
                   # desktop.asar, so upload the fresh build to whatever the latest release is.
