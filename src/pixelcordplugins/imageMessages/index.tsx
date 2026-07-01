@@ -26,19 +26,19 @@ const ImageIcon: IconComponent = ({ height = 20, width = 20, className }) => (
 );
 
 const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
-    const { enabled } = settings.use(["enabled"]);
+    const { active } = settings.use(["active"]);
     if (!isMainChat) return null;
 
     return (
         <ChatBarButton
-            tooltip={enabled ? "Send as image: ON (click to toggle)" : "Send as image: OFF (click to toggle)"}
+            tooltip={active ? "Send as image: ON (click to toggle)" : "Send as image: OFF (click to toggle)"}
             onClick={() => {
-                const next = !settings.store.enabled;
-                settings.store.enabled = next;
+                const next = !settings.store.active;
+                settings.store.active = next;
                 showToast(next ? "🖼️ Messages will be sent as images" : "Sending as text again");
             }}
         >
-            <ImageIcon className={classes(cl("icon"), enabled && cl("active"))} />
+            <ImageIcon className={classes(cl("icon"), active && cl("active"))} />
         </ChatBarButton>
     );
 };
@@ -56,7 +56,7 @@ export default definePlugin({
     },
 
     async onBeforeMessageSend(_channelId, message, options) {
-        if (!settings.store.enabled || !message.content) return;
+        if (!settings.store.active || !message.content) return;
         if (options?.uploads?.length) return; // already sending files — leave as-is
 
         try {

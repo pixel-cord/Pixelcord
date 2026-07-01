@@ -8,7 +8,9 @@ import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
 export const settings = definePluginSettings({
-    enabled: {
+    // NB: must not be named "enabled" — that key collides with Vencord's own
+    // per-plugin enable flag and would toggle the whole plugin off.
+    active: {
         type: OptionType.BOOLEAN,
         description: "Encrypt my outgoing messages",
         default: false

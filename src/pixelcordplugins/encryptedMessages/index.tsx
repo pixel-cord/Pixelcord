@@ -26,10 +26,9 @@ const KeyIcon: IconComponent = ({ height = 20, width = 20, className }) => (
 );
 
 const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
-    const { enabled, key } = settings.use(["enabled", "key"]);
+    const { active, key } = settings.use(["active", "key"]);
     if (!isMainChat) return null;
 
-    const active = enabled;
     const tooltip = !active
         ? "Encrypted messages (right-click to toggle)"
         : key
@@ -40,8 +39,8 @@ const ChatBarRender: ChatBarButtonFactory = ({ isMainChat }) => {
             tooltip={tooltip}
             onClick={() => openKeyModal()}
             onContextMenu={() => {
-                const next = !settings.store.enabled;
-                settings.store.enabled = next;
+                const next = !settings.store.active;
+                settings.store.active = next;
                 showToast(next ? "🔒 Encryption on" : "Encryption off");
             }}
             buttonProps={{ "aria-haspopup": "dialog" }}
@@ -70,7 +69,7 @@ export default definePlugin({
     },
 
     async onBeforeMessageSend(_channelId, message) {
-        if (!settings.store.enabled || !message.content) return;
+        if (!settings.store.active || !message.content) return;
         const encrypted = await encryptContent(message.content);
         if (encrypted) message.content = encrypted;
     }

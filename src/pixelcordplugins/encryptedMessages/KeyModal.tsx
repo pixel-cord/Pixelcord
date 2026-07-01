@@ -15,7 +15,7 @@ import { redecryptVisible } from "./messages";
 import { settings } from "./settings";
 
 function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
-    const { enabled, key } = settings.use(["enabled", "key"]);
+    const { active, key } = settings.use(["active", "key"]);
     const [input, setInput] = useState(key);
 
     return (
@@ -23,7 +23,7 @@ function KeyModal({ modalProps }: { modalProps: RenderModalProps; }) {
             <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Paragraph>Encrypt my messages</Paragraph>
-                    <Switch checked={enabled} onChange={v => (settings.store.enabled = v)} />
+                    <Switch checked={active} onChange={v => (settings.store.active = v)} />
                 </div>
 
                 <div>
