@@ -6,6 +6,7 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { getUserSettingLazy } from "@api/UserSettings";
+import { PixelCordDevs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher } from "@webpack/common";
@@ -262,7 +263,7 @@ async function onPlayerState(state: PlayerState) {
 export default definePlugin({
     name: "SpotifyLyricsStatus",
     description: "Syncs your Discord custom status with the lyrics of the song you're playing on Spotify, line by line. Clears the status when the song ends.",
-    authors: [{ name: "luvygor", id: 1499140821696647301n }],
+    authors: [PixelCordDevs.luvygor],
     tags: ["Activity", "Media", "Customisation"],
     dependencies: ["UserSettingsAPI"],
     settings,
