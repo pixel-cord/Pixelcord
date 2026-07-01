@@ -1,0 +1,49 @@
+/**
+ * @name Pixelcord Bubbles (Light)
+ * @description Companion theme for the MessageDecorations plugin — turns every message
+ *              into a soft rounded bubble so the decorated ones feel native, not bolted
+ *              on. Pair it with Discord's Light mode.
+ * @author 5xk
+ * @version 1.0.0
+ */
+
+/*
+ * Same idea as the dark variant: decorated messages (`.vc-msgdeco-balloon`) keep the
+ * decoration's palette, and every OTHER message gets a neutral white bubble so the whole
+ * chat reads as cohesive. Use this one with Discord set to Light mode.
+ */
+
+:root {
+    --pcb-bubble-bg: #fff;
+    --pcb-bubble-border: 1px solid rgb(0 0 0 / 8%);
+    --pcb-bubble-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+    --pcb-radius: 16px;
+}
+
+/* Each undecorated message becomes a neutral white bubble that hugs its text. */
+li[id^="chat-messages-"] [id^="message-content-"]:not(.vc-msgdeco-balloon) {
+    display: inline-block;
+    max-width: 100%;
+    padding: 7px 13px;
+    border: var(--pcb-bubble-border);
+    border-radius: var(--pcb-radius);
+    background: var(--pcb-bubble-bg);
+    box-shadow: var(--pcb-bubble-shadow);
+}
+
+/* A little vertical breathing room so bubbles don't touch. */
+li[id^="chat-messages-"] {
+    margin-top: 3px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+/* Round the avatars to match the soft look. */
+img[class*="avatar"] {
+    border-radius: 32%;
+}
+
+/* Round the message input box. */
+[class*="channelTextArea"] [class*="scrollableContainer"] {
+    border-radius: 20px;
+}
