@@ -6,7 +6,7 @@ on:
 
 env:
     FORCE_COLOR: true
-    GITHUB_TOKEN: ${{ secrets.ETOKEN }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     REPO: Equicord/Equibored
     USERNAME: GitHub-Actions
 
@@ -45,32 +45,18 @@ jobs:
                   pnpm generateVencordPluginJson dist/vencordplugins.json
                   pnpm generateDevsList dist/devs.json
 
-            - name: Collect files to be released
-              run: |
-                  cd dist
-                  mkdir release
-
-                  cp browser/browser.* release
-                  cp Equicord.user.{js,js.LEGAL.txt} release
-
-                  # copy the plugin data jsons, the extension zips and the desktop/equibop asars
-                  cp *.{json,zip,asar} release
-
-                  # legacy un-asared files
-                  cp desktop/* release
-                  for file in equibop/*; do
-                    filename=$(basename "$file")
-                    cp "$file" "release/equibop${filename^}"
-                  done
-
-                  find release -size 0 -delete
-                  rm release/package.json
-                  rm release/*.map
-
-            - name: Upload Pixelcord Stable
+            - name: Publish desktop build to the latest release
               if: ${{ vars.ACT == 'false' }}
               run: |
-                  gh release upload latest --clobber dist/release/*
+                  # The installer CLI (Pixelotl) reads /releases/latest and downloads
+                  # desktop.asar, so upload the fresh build to whatever the latest release is.
+                  # (On a version bump, publish.yml makes a new release become "latest"; if this
+                  # ever races and uploads to the previous tag, just re-push to refresh it.)
+                  tag=$(gh release view --json tagName --jq .tagName)
+                  echo "Uploading build to release $tag"
+                  gh release upload "$tag" --clobber \
+                      dist/desktop.asar dist/pixeltop.asar \
+                      dist/plugins.json dist/equicordplugins.json dist/vencordplugins.json dist/devs.json
 
             - name: Upload Plugin JSONs to Equibored repo
               if: github.repository == 'Equicord/Equicord' && vars.ACT == 'false'
