@@ -30,33 +30,24 @@
     overflow-wrap: anywhere;
 }
 
-/* Reserve a column for the avatar on its side so the text never sits under it. The avatar
-   sits fully inside the card, so this is sized to hold it plus a small gap. */
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] {
-    padding-left: 44px;
-}
+/* Reserve a column on the balloon's side so text never sits under the figure. Pixelcord
+   tucks a full avatar inside (wider column); TikTok shows just the character (narrower). */
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="left"] { padding-left: 44px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="right"] { padding-right: 44px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"][data-vc-msgdeco-pos="left"] { padding-left: 38px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"][data-vc-msgdeco-pos="right"] { padding-right: 38px; }
 
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] {
-    padding-right: 44px;
-}
-
-/* Discord already renders the author's avatar in the gutter, so on decorated messages we
-   hide the native one and show our own in the frame instead — otherwise you get two stacked
-   avatars. Scoped via :has to decorated rows only; the native avatar is a direct child of
-   the same contents container as the balloon. */
-[class*="contents"]:has(> .vc-msgdeco-balloon) > img[class*="avatar"] {
+/* PIXELCORD only: Discord already draws the avatar in the gutter and we draw our own inside
+   the bubble, so hide the native one to avoid a duplicate. TikTok deliberately keeps it —
+   that's the point of that style (the avatar stays outside). */
+[class*="contents"]:has(> .vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"]) > img[class*="avatar"] {
     display: none;
 }
 
-/* The figure — the author's real avatar with the decoration's character as a small badge on
-   its corner. It sits fully inside the balloon's reserved column (never overhanging the card
-   edge, so it's never clipped) and is vertically centred so it works on one line or ten. */
+/* The figure sits in the reserved column, out of the text flow, never overhanging the card
+   edge (so it's never clipped). Size and anchor differ per style, below. */
 .vc-msgdeco-figure {
     position: absolute;
-    top: 50%;
-    width: 32px;
-    height: 32px;
-    transform: translateY(-50%);
     pointer-events: none;
     user-select: none;
 }
@@ -69,31 +60,50 @@
     background: var(--background-tertiary);
 }
 
-/* The character sits on the avatar's bottom-outer corner, like a small sticker badge. */
 .vc-msgdeco-character {
     position: absolute;
-    bottom: -1px;
-    width: 16px;
-    height: 16px;
     object-fit: contain;
+    pointer-events: none;
+    user-select: none;
     filter: drop-shadow(0 1px 1px rgb(0 0 0 / 25%));
 }
 
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] > .vc-msgdeco-figure {
-    left: 6px;
+/* --- Pixelcord: the author's real avatar (vertically centred) with the character as a
+   small badge on its bottom-outer corner. --- */
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"] > .vc-msgdeco-figure {
+    top: 50%;
+    width: 32px;
+    height: 32px;
+    transform: translateY(-50%);
 }
 
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] > .vc-msgdeco-figure {
-    right: 6px;
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"] .vc-msgdeco-character {
+    bottom: -1px;
+    width: 16px;
+    height: 16px;
 }
 
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="left"] .vc-msgdeco-character {
-    left: -2px;
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="left"] > .vc-msgdeco-figure { left: 6px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="right"] > .vc-msgdeco-figure { right: 6px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="left"] .vc-msgdeco-character { left: -2px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="pixelcord"][data-vc-msgdeco-pos="right"] .vc-msgdeco-character { right: -2px; }
+
+/* --- TikTok: only the character, tucked in the bubble's bottom corner (the real avatar
+   stays outside, drawn by Discord). --- */
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"] > .vc-msgdeco-figure {
+    bottom: 2px;
+    width: 26px;
+    height: 26px;
 }
 
-.vc-msgdeco-balloon[data-vc-msgdeco-pos="right"] .vc-msgdeco-character {
-    right: -2px;
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"] .vc-msgdeco-character {
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
+
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"][data-vc-msgdeco-pos="left"] > .vc-msgdeco-figure { left: 7px; }
+.vc-msgdeco-balloon[data-vc-msgdeco-style="tiktok"][data-vc-msgdeco-pos="right"] > .vc-msgdeco-figure { right: 7px; }
 
 /* On grouped messages the compact hover timestamp is a sibling before the card; on a
    tall (multi-line) card it would centre vertically and look detached. Scoped with :has

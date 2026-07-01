@@ -11,6 +11,7 @@ import { ChannelStore, IconUtils, MessageStore, SelectedChannelStore, useLayoutE
 
 import { getDecoration } from "./api";
 import { decodeMarker, MARKER_HINT } from "./markers";
+import { settings } from "./settings";
 
 const cl = classNameFactory("vc-msgdeco-");
 const ACCESSORY_ID = "MessageDecorations";
@@ -41,11 +42,12 @@ export function handleIncoming(message: any) {
         updateMessage(message.channel_id, message.id, { content: cleaned });
 }
 
-// Rendered once per message by the accessory API. It draws nothing of its own; instead
-// it turns the message's real content node into the CSS balloon and drops the author's
-// avatar (badged with the decoration's character) next to it. Working on the real content
-// node is what makes the balloon stretch with the text for free, short and long alike.
+// Rendered once per message by the accessory API. It draws nothing of its own; instead it
+// turns the message's real content node into the CSS balloon and tucks the decoration's
+// character (plus, in the Pixelcord style, the author's avatar) into a corner. Working on the
+// real content node is what makes the balloon stretch with the text for free.
 function DecorationAccessory({ message }: { message: any; }) {
+    const { style } = settings.use(["style"]);
     const decoId = message?.id ? cache.get(message.id) : undefined;
     const deco = decoId ? getDecoration(decoId) : undefined;
 
@@ -59,57 +61,68 @@ function DecorationAccessory({ message }: { message: any; }) {
 
         content.classList.add(cl("balloon"));
         content.dataset.vcMsgdecoPos = deco.position;
+        content.dataset.vcMsgdecoStyle = style || "tiktok";
         // Colours arrive as CSS custom properties. They're validated hex (see api.ts),
         // and setProperty values can't break out of the declaration anyway.
         content.style.setProperty("--vc-msgdeco-border", deco.borderColor);
         content.style.setProperty("--vc-msgdeco-bg", deco.backgroundColor);
         content.style.setProperty("--vc-msgdeco-text", deco.textColor);
 
-        // The figure = the message author's real avatar with the decoration's character as
-        // a small badge on its corner. It's anchored to a bottom corner of the balloon (see
-        // CSS) — out of the text flow — so it stays put on short and long messages alike and
-        // is never clipped; CSS handles which side via data-pos. Both are plain <img>s (never
-        // inline SVG), so an SVG character loads in image mode with no script execution.
+        // The figure holds the decoration's character. In the Pixelcord style it ALSO holds
+        // the author's real avatar (with the character as a badge on it), tucked inside the
+        // bubble; in the TikTok style the avatar stays where Discord draws it (outside the
+        // bubble), so we show only the character. It's anchored in the balloon's reserved
+        // column (see CSS), out of the text flow, so it never clips. Plain <img>s only — an
+        // SVG character loads in image mode with no script execution.
         let figure = content.querySelector<HTMLDivElement>(`:scope > .${cl("figure")}`);
         if (!figure) {
             figure = document.createElement("div");
             figure.className = cl("figure");
             figure.setAttribute("aria-hidden", "true");
 
-            const avatarImg = document.createElement("img");
-            avatarImg.className = cl("avatar");
-            avatarImg.alt = "";
-
             const characterImg = document.createElement("img");
             characterImg.className = cl("character");
             characterImg.alt = "";
 
-            figure.append(avatarImg, characterImg);
+            figure.appendChild(characterImg);
             content.appendChild(figure);
         }
 
-        const avatar = figure.querySelector<HTMLImageElement>(`:scope > .${cl("avatar")}`)!;
         const character = figure.querySelector<HTMLImageElement>(`:scope > .${cl("character")}`)!;
 
-        // Server profile avatar when we're in a guild, else the global one; fall back to the
-        // user's default avatar if the record can't build a URL or the image fails to load.
-        const guildId = ChannelStore.getChannel(message.channel_id)?.guild_id;
-        const fallbackAvatar = IconUtils.getDefaultAvatarURL(message.author?.id ?? "0");
-        const avatarUrl = message.author?.getAvatarURL?.(guildId, 128) ?? fallbackAvatar;
-        avatar.onerror = () => { avatar.onerror = null; avatar.src = fallbackAvatar; };
+        if (style === "pixelcord") {
+            let avatar = figure.querySelector<HTMLImageElement>(`:scope > .${cl("avatar")}`);
+            if (!avatar) {
+                avatar = document.createElement("img");
+                avatar.className = cl("avatar");
+                avatar.alt = "";
+                figure.prepend(avatar);
+            }
+            const av = avatar;
+            // Server profile avatar in a guild, else the global one; fall back to the user's
+            // default avatar if the record can't build a URL or the image fails to load.
+            const guildId = ChannelStore.getChannel(message.channel_id)?.guild_id;
+            const fallbackAvatar = IconUtils.getDefaultAvatarURL(message.author?.id ?? "0");
+            const avatarUrl = message.author?.getAvatarURL?.(guildId, 128) ?? fallbackAvatar;
+            av.onerror = () => { av.onerror = null; av.src = fallbackAvatar; };
+            if (av.src !== avatarUrl) av.src = avatarUrl;
+        } else {
+            // TikTok style: Discord's own avatar stays outside the bubble, so drop ours.
+            figure.querySelector<HTMLImageElement>(`:scope > .${cl("avatar")}`)?.remove();
+        }
 
-        if (avatar.src !== avatarUrl) avatar.src = avatarUrl;
         if (character.src !== deco.character) character.src = deco.character;
 
         return () => {
             content.classList.remove(cl("balloon"));
             delete content.dataset.vcMsgdecoPos;
+            delete content.dataset.vcMsgdecoStyle;
             content.style.removeProperty("--vc-msgdeco-border");
             content.style.removeProperty("--vc-msgdeco-bg");
             content.style.removeProperty("--vc-msgdeco-text");
             figure?.remove();
         };
-    }, [deco, message.id]);
+    }, [deco, message.id, style]);
 
     return null;
 }
