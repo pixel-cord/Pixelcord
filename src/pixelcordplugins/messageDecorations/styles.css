@@ -14,7 +14,10 @@
     position: relative;
     display: inline-block;
     max-width: min(100%, 540px);
-    margin: 2px 0;
+    /* Only vertical margin — a shorthand `margin: 2px 0` would zero margin-left and wipe out
+       Discord's content indent, pulling the balloon to the far left (out of line with normal
+       messages). margin-block leaves the horizontal indent untouched. */
+    margin-block: 2px;
     padding: 6px 13px;
     border: 2px solid var(--vc-msgdeco-border, var(--background-modifier-accent));
     border-radius: 15px;
