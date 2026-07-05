@@ -9,6 +9,7 @@ import "./styles.css";
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { definePluginSettings } from "@api/Settings";
 import { Paragraph } from "@components/Paragraph";
+import { Switch } from "@components/Switch";
 import { PixelCordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { sendMessage } from "@utils/discord";
@@ -40,12 +41,25 @@ const settings = definePluginSettings({
         description: "Ajuste de sincronia em ms (positivo = adianta a letra, negativo = atrasa)",
         default: 0
     },
+    ignoreParens: {
+        type: OptionType.BOOLEAN,
+        description: "Ignorar partes entre parênteses — ex: (what?), (yeah), (strapped) — e pular linhas que são só isso",
+        default: true
+    },
     onlySyncedLyrics: {
         type: OptionType.BOOLEAN,
         description: "Só cantar se a música tiver letra realmente sincronizada",
         default: true
     }
 });
+
+// Strips backing-vocal parentheticals like "(what?)" when the option is on. If a
+// whole line is just a parenthetical (backing/echo line), the result is empty and
+// the caller skips it.
+function cleanLyric(text: string): string {
+    if (!settings.store.ignoreParens) return text;
+    return text.replace(/\([^)]*\)/g, "").replace(/\s{2,}/g, " ").trim();
+}
 
 const LYRICS_API = "https://api.cee.bio/spotify/lyrics/";
 
@@ -197,13 +211,16 @@ function tick() {
 
     lastSentLineTime = line.time; // mark seen even if we skip below
 
+    const text = cleanLyric(line.text);
+    if (!text) return; // whole line was a parenthetical (backing vocal) → skip
+
     const now = Date.now();
     if (now - lastSentAt < Math.max(settings.store.minGap || 0, 1000)) return; // rate-limit guard
     lastSentAt = now;
 
     const prefix = settings.store.emoji ? `${settings.store.emoji} ` : "";
     try {
-        sendMessage(targetChannelId, { content: `${prefix}${line.text}`.slice(0, 2000) });
+        sendMessage(targetChannelId, { content: `${prefix}${text}`.slice(0, 2000) });
     } catch (e) {
         logger.error("Failed to send lyric", e);
     }
@@ -236,7 +253,7 @@ function stopSinging() {
 // ── config + activate modal (left click) ─────────────────────────────
 function SingModal({ modalProps, channelId }: { modalProps: any; channelId: string; }) {
     const isActive = useActive();
-    const { emoji, minGap, offset } = settings.use(["emoji", "minGap", "offset"]);
+    const { emoji, minGap, offset, ignoreParens } = settings.use(["emoji", "minGap", "offset", "ignoreParens"]);
 
     return (
         <Modal {...modalProps} size="sm" title="Cantar a música do Spotify">
@@ -274,6 +291,11 @@ function SingModal({ modalProps, channelId }: { modalProps: any; channelId: stri
                         stickToMarkers
                         onValueChange={(v: number) => (settings.store.minGap = Math.round(v))}
                     />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <Paragraph>Ignorar partes entre parênteses — (what?), (yeah)</Paragraph>
+                    <Switch checked={ignoreParens} onChange={(v: boolean) => (settings.store.ignoreParens = v)} />
                 </div>
 
                 <Button
