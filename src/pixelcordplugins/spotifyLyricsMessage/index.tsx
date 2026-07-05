@@ -8,13 +8,14 @@ import "./styles.css";
 
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { definePluginSettings } from "@api/Settings";
+import { Paragraph } from "@components/Paragraph";
 import { PixelCordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
 import definePlugin, { IconComponent, OptionType } from "@utils/types";
-import { FluxDispatcher, React, showToast, SpotifyStore } from "@webpack/common";
+import { Button, FluxDispatcher, Modal, openModal, PresenceStore, React, showToast, Slider, TextInput, UserStore } from "@webpack/common";
 
 const logger = new Logger("SpotifyLyricsMessage");
 const cl = classNameFactory("vc-slmsg-");
@@ -26,17 +27,22 @@ interface PlayerState { track: Track | null; isPlaying: boolean; position: numbe
 const settings = definePluginSettings({
     emoji: {
         type: OptionType.STRING,
-        description: "Prefixo/emoji antes de cada linha cantada (vazio = nenhum)",
+        description: "Prefixo/emoji antes de cada linha (vazio = nenhum)",
         default: "🎵"
     },
     minGap: {
         type: OptionType.NUMBER,
-        description: "Intervalo mínimo entre mensagens em ms (protege contra rate-limit/spam; linhas mais rápidas que isso são puladas)",
+        description: "Intervalo mínimo entre mensagens em ms (protege contra rate-limit; linhas mais rápidas são puladas)",
         default: 2000
+    },
+    offset: {
+        type: OptionType.NUMBER,
+        description: "Ajuste de sincronia em ms (positivo = adianta a letra, negativo = atrasa)",
+        default: 0
     },
     onlySyncedLyrics: {
         type: OptionType.BOOLEAN,
-        description: "Só cantar se a música tiver letra realmente sincronizada (senão não canta nada)",
+        description: "Só cantar se a música tiver letra realmente sincronizada",
         default: true
     }
 });
@@ -61,7 +67,7 @@ let tickHandle: number | undefined;
 
 const TICK_MS = 400;
 
-// ── active pub/sub so the chat button reflects on/off ────────────────
+// ── active pub/sub so the button + modal reflect on/off ──────────────
 const listeners = new Set<() => void>();
 function setActive(v: boolean) { active = v; listeners.forEach(l => l()); }
 function useActive(): boolean {
@@ -76,9 +82,10 @@ function currentPosition(): number {
 
 function findCurrentLine(pos: number): SyncedLyric | null {
     if (!lyrics) return null;
+    const adjusted = pos + (settings.store.offset || 0);
     let current: SyncedLyric | null = null;
     for (const line of lyrics) {
-        if (line.time <= pos) current = line;
+        if (line.time <= adjusted) current = line;
         else break;
     }
     return current;
@@ -126,7 +133,6 @@ async function onPlayerState(state: PlayerState) {
     currentDuration = track.duration ?? 0;
     if (track.id === currentTrackId) return; // same song, just a position update
 
-    // new song → reset and fetch its lyrics
     currentTrackId = track.id;
     lyrics = null;
     lastSentLineTime = null;
@@ -135,6 +141,45 @@ async function onPlayerState(state: PlayerState) {
     const fetched = track.isLocal ? null : await fetchLyrics(track.id);
     if (token !== fetchToken) return;
     lyrics = fetched;
+}
+
+// Ground truth for "where is the song RIGHT NOW": the Spotify LISTENING activity
+// carries timestamps.start, so position = now - start. Used to seed accurately on
+// activation (SPOTIFY_PLAYER_STATE only fires on changes, so a mid-song toggle
+// would otherwise start from a stale/zero position and "sing the past").
+function seedFromActivity() {
+    try {
+        const uid = UserStore.getCurrentUser?.()?.id;
+        if (!uid) return;
+        const acts: any[] = (PresenceStore as any).getActivities?.(uid) ?? [];
+        const sp = acts.find(a => a?.type === 2 && a?.sync_id && a?.timestamps?.start);
+        if (!sp) return;
+        const start = Number(sp.timestamps.start);
+        const end = Number(sp.timestamps.end);
+        onPlayerState({
+            track: {
+                id: sp.sync_id,
+                name: sp.details ?? "",
+                duration: Number.isFinite(end - start) ? end - start : 0,
+                isLocal: false,
+                artists: sp.state ? [{ name: sp.state }] : []
+            },
+            isPlaying: true,
+            position: Date.now() - start
+        });
+    } catch (e) {
+        logger.error("seed from activity failed", e);
+    }
+}
+
+function isSpotifyPlaying(): boolean {
+    try {
+        const uid = UserStore.getCurrentUser?.()?.id;
+        const acts: any[] = (PresenceStore as any).getActivities?.(uid) ?? [];
+        return acts.some(a => a?.type === 2 && a?.sync_id);
+    } catch {
+        return false;
+    }
 }
 
 function tick() {
@@ -150,7 +195,7 @@ function tick() {
     if (!line || line.text === null) return;
     if (line.time === lastSentLineTime) return; // already handled this line
 
-    lastSentLineTime = line.time; // mark seen even if we skip it below
+    lastSentLineTime = line.time; // mark seen even if we skip below
 
     const now = Date.now();
     if (now - lastSentAt < Math.max(settings.store.minGap || 0, 1000)) return; // rate-limit guard
@@ -164,18 +209,6 @@ function tick() {
     }
 }
 
-function seedFromStore() {
-    try {
-        const track = (SpotifyStore as any)?.getTrack?.();
-        if (!track) return;
-        onPlayerState({
-            track,
-            isPlaying: (SpotifyStore as any).isPlaying?.() ?? true,
-            position: (SpotifyStore as any).getPosition?.() ?? (SpotifyStore as any).position ?? 0
-        });
-    } catch { /* best effort */ }
-}
-
 function startSinging(channelId: string) {
     if (active) return;
     targetChannelId = channelId;
@@ -186,7 +219,7 @@ function startSinging(channelId: string) {
     setActive(true);
     FluxDispatcher.subscribe("SPOTIFY_PLAYER_STATE", onPlayerState);
     tickHandle = window.setInterval(tick, TICK_MS);
-    seedFromStore();
+    seedFromActivity();
 }
 
 function stopSinging() {
@@ -198,6 +231,77 @@ function stopSinging() {
     targetChannelId = null;
     currentTrackId = null;
     lyrics = null;
+}
+
+// ── config + activate modal (left click) ─────────────────────────────
+function SingModal({ modalProps, channelId }: { modalProps: any; channelId: string; }) {
+    const isActive = useActive();
+    const { emoji, minGap, offset } = settings.use(["emoji", "minGap", "offset"]);
+
+    return (
+        <Modal {...modalProps} size="sm" title="Cantar a música do Spotify">
+            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+                <Paragraph>
+                    Envia as letras sincronizadas da música do Spotify como mensagens neste chat, seguindo a música.
+                </Paragraph>
+                <Paragraph style={{ color: "var(--text-warning, #f0b232)" }}>
+                    ⚠️ Isso é spam de mensagens — pode gerar aviso/ban na conta. Use por sua conta e risco.
+                </Paragraph>
+
+                <div>
+                    <Paragraph>Prefixo / emoji</Paragraph>
+                    <TextInput value={emoji} onChange={(v: string) => (settings.store.emoji = v)} placeholder="🎵" />
+                </div>
+
+                <div>
+                    <Paragraph>Ajuste de sincronia: {offset > 0 ? "+" : ""}{offset} ms (positivo = adianta, negativo = atrasa)</Paragraph>
+                    <Slider
+                        minValue={-3000}
+                        maxValue={3000}
+                        initialValue={offset}
+                        markers={[-3000, -1500, 0, 1500, 3000]}
+                        onValueChange={(v: number) => (settings.store.offset = Math.round(v / 250) * 250)}
+                    />
+                </div>
+
+                <div>
+                    <Paragraph>Intervalo mínimo entre mensagens: {minGap} ms</Paragraph>
+                    <Slider
+                        minValue={1000}
+                        maxValue={5000}
+                        initialValue={minGap}
+                        markers={[1000, 2000, 3000, 4000, 5000]}
+                        stickToMarkers
+                        onValueChange={(v: number) => (settings.store.minGap = Math.round(v))}
+                    />
+                </div>
+
+                <Button
+                    color={isActive ? Button.Colors.RED : Button.Colors.BRAND}
+                    onClick={() => {
+                        if (active) {
+                            stopSinging();
+                            showToast("🎤 Parou de cantar");
+                            return;
+                        }
+                        if (!isSpotifyPlaying()) {
+                            showToast("Nada tocando no Spotify");
+                            return;
+                        }
+                        startSinging(channelId);
+                        showToast("🎤 Cantando a música no chat…");
+                        modalProps.onClose?.();
+                    }}
+                >
+                    {isActive ? "Parar de cantar" : "Começar a cantar 🎤"}
+                </Button>
+            </div>
+        </Modal>
+    );
+}
+
+function openSingModal(channelId: string) {
+    openModal(props => <SingModal modalProps={props} channelId={channelId} />);
 }
 
 const SingIcon: IconComponent = ({ height = 24, width = 24, className }) => (
@@ -213,14 +317,15 @@ const ChatBarRender: ChatBarButtonFactory = ({ channel, isMainChat }) => {
 
     return (
         <ChatBarButton
-            tooltip={isActive ? "Parar de cantar" : "Cantar a música do Spotify no chat"}
-            onClick={() => {
+            tooltip={isActive ? "Cantando (esq: config/parar · dir: parar)" : "Cantar Spotify (esq: config · dir: ativar direto)"}
+            onClick={() => openSingModal(channel.id)}
+            onContextMenu={() => {
                 if (active) {
                     stopSinging();
                     showToast("🎤 Parou de cantar");
                     return;
                 }
-                if (!(SpotifyStore as any)?.getTrack?.()) {
+                if (!isSpotifyPlaying()) {
                     showToast("Nada tocando no Spotify");
                     return;
                 }
@@ -235,7 +340,7 @@ const ChatBarRender: ChatBarButtonFactory = ({ channel, isMainChat }) => {
 
 export default definePlugin({
     name: "SpotifyLyricsMessage",
-    description: "Botão na barra de chat que, ao ativar, canta a música do Spotify enviando as letras sincronizadas como mensagens. Viola o ToS do Discord (spam) — use por sua conta e risco.",
+    description: "Botão na barra de chat que canta a música do Spotify enviando as letras sincronizadas como mensagens. Esquerdo abre config, direito ativa direto. Viola o ToS do Discord (spam) — use por sua conta e risco.",
     authors: [PixelCordDevs.myvings],
     tags: ["Activity", "Media", "Fun"],
     settings,
