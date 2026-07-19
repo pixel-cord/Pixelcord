@@ -50,8 +50,26 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Só cantar se a música tiver letra realmente sincronizada",
         default: true
+    },
+    lowercase: {
+        type: OptionType.BOOLEAN,
+        description: "Enviar as letras tudo em minúsculo",
+        default: false
+    },
+    naturalStyle: {
+        type: OptionType.BOOLEAN,
+        description: "Mais natural — remove o ponto final (.) e ! do fim das linhas",
+        default: false
     }
 });
+
+// Casual styling for a lyric line: optional lowercase + drop trailing . / !
+function styleText(text: string): string {
+    let t = text;
+    if (settings.store.lowercase) t = t.toLowerCase();
+    if (settings.store.naturalStyle) t = t.replace(/[.!]+$/g, "").trimEnd();
+    return t;
+}
 
 // Strips backing-vocal parentheticals like "(what?)" when the option is on. If a
 // whole line is just a parenthetical (backing/echo line), the result is empty and
@@ -211,7 +229,7 @@ function tick() {
 
     lastSentLineTime = line.time; // mark seen even if we skip below
 
-    const text = cleanLyric(line.text);
+    const text = styleText(cleanLyric(line.text));
     if (!text) return; // whole line was a parenthetical (backing vocal) → skip
 
     const now = Date.now();
@@ -253,7 +271,7 @@ function stopSinging() {
 // ── config + activate modal (left click) ─────────────────────────────
 function SingModal({ modalProps, channelId }: { modalProps: any; channelId: string; }) {
     const isActive = useActive();
-    const { emoji, minGap, offset, ignoreParens } = settings.use(["emoji", "minGap", "offset", "ignoreParens"]);
+    const { emoji, minGap, offset, ignoreParens, lowercase, naturalStyle } = settings.use(["emoji", "minGap", "offset", "ignoreParens", "lowercase", "naturalStyle"]);
 
     return (
         <Modal {...modalProps} size="sm" title="Cantar a música do Spotify">
@@ -296,6 +314,16 @@ function SingModal({ modalProps, channelId }: { modalProps: any; channelId: stri
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Paragraph>Ignorar partes entre parênteses — (what?), (yeah)</Paragraph>
                     <Switch checked={ignoreParens} onChange={(v: boolean) => (settings.store.ignoreParens = v)} />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <Paragraph>Tudo em minúsculo</Paragraph>
+                    <Switch checked={lowercase} onChange={(v: boolean) => (settings.store.lowercase = v)} />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <Paragraph>Mais natural (sem ponto final / !)</Paragraph>
+                    <Switch checked={naturalStyle} onChange={(v: boolean) => (settings.store.naturalStyle = v)} />
                 </div>
 
                 <Button
