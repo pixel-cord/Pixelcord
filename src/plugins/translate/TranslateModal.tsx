@@ -59,15 +59,17 @@ function LanguageSelect({ settingsKey, includeAuto }: { settingsKey: typeof Lang
     );
 }
 
-function AutoTranslateToggle() {
-    const value = settings.use(["autoTranslate"]).autoTranslate;
+type ToggleKey = "autoTranslate" | "autoTranslateReceived" | "lowercase";
+
+function SettingToggle({ settingsKey, title }: { settingsKey: ToggleKey; title: string; }) {
+    const value = settings.use([settingsKey])[settingsKey] as boolean;
 
     return (
         <FormSwitch
-            title="Auto Translate"
-            description={settings.def.autoTranslate.description}
+            title={title}
+            description={settings.def[settingsKey].description}
             value={value}
-            onChange={v => settings.store.autoTranslate = v}
+            onChange={v => settings.store[settingsKey] = v}
             hideBorder
         />
     );
@@ -89,7 +91,9 @@ export function TranslateModal({ rootProps }: { rootProps: RenderModalProps; }) 
 
             <Divider className={Margins.bottom16} />
 
-            <AutoTranslateToggle />
+            <SettingToggle settingsKey="autoTranslate" title="Auto-traduzir mensagens enviadas" />
+            <SettingToggle settingsKey="autoTranslateReceived" title="Auto-traduzir mensagens recebidas" />
+            <SettingToggle settingsKey="lowercase" title="Enviar tudo em minúsculo" />
         </Modal>
     );
 }
