@@ -13,28 +13,22 @@ import { Jungle } from "./jungle";
 
 const logger = new Logger("VoiceChanger");
 
-// value = pitch shift in semitones (stored as string for the SELECT)
-const PRESETS = [
-    { label: "Normal (sem efeito)", value: "0" },
-    { label: "Grave — voz grossa", value: "-5" },
-    { label: "Bem grave — monstro", value: "-10" },
-    { label: "Aguda — voz fina", value: "5" },
-    { label: "Bem aguda — esquilo", value: "10" }
-] as const;
-
 function applyLiveToAll() { active.forEach(apply); }
 
 const settings = definePluginSettings({
-    preset: {
-        type: OptionType.SELECT,
-        description: "Efeito aplicado à sua voz no microfone (muda ao vivo)",
-        options: PRESETS.map((p, i) => ({ label: p.label, value: p.value, default: i === 0 })),
+    pitch: {
+        type: OptionType.SLIDER,
+        description: "Pitch da voz em semitons — esquerda = mais grave (grossa), direita = mais aguda (fina), 0 = normal. Muda ao vivo.",
+        default: 0,
+        markers: [-12, -9, -6, -3, 0, 3, 6, 9, 12],
+        stickToMarkers: false,
         onChange: applyLiveToAll
     }
 });
 
 function semitones(): number {
-    return parseInt(settings.store.preset ?? "0", 10) || 0;
+    const v = settings.store.pitch;
+    return typeof v === "number" ? Math.round(v) : 0;
 }
 
 // -12..+12 semitones → -1..+1 (≈ ∓1 octave for the Jungle shifter)
