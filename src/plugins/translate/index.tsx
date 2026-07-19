@@ -60,11 +60,14 @@ function getMessageContent(message: Message) {
 
 let tooltipTimeout: any;
 
-// "More natural" style: drop the period/exclamation mark at the end of each line
-// (not mid-sentence, so decimals/abbreviations are safe).
+// "More natural" style: replace em/en/double dashes (— – --) with a comma, and
+// drop the period/exclamation mark at the end of each line (not mid-sentence, so
+// decimals/abbreviations are safe).
 function naturalize(text: string): string {
     if (!settings.store.naturalStyle) return text;
-    return text.replace(/[.!]+(?=\n|$)/g, "");
+    return text
+        .replace(/\s*(?:—|–|--)\s*/g, ", ")
+        .replace(/[.!]+(?=\n|$)/g, "");
 }
 
 // Auto-translate a batch of already-loaded messages (channel open / history load).

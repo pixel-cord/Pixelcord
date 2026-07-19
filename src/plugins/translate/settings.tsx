@@ -86,7 +86,7 @@ export const settings = definePluginSettings({
     },
     naturalStyle: {
         type: OptionType.BOOLEAN,
-        description: "More natural style — removes the final period (.) and exclamation mark (!) at the end of lines",
+        description: "More natural style — replaces dashes (— – --) with a comma and removes the final period (.) / exclamation mark (!) at the end of lines",
         default: false
     },
     showAutoTranslateTooltip: {
