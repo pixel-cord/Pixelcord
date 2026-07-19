@@ -22,11 +22,11 @@ import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/Co
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
-import { ChannelStore, Menu, SelectedChannelStore, UserStore } from "@webpack/common";
+import { ChannelStore, Menu, MessageStore, SelectedChannelStore, UserStore } from "@webpack/common";
 
 import { settings } from "./settings";
 import { setShouldShowTranslateEnabledTooltip, TranslateChatBarIcon, TranslateIcon } from "./TranslateIcon";
-import { handleTranslate, TranslationAccessory } from "./TranslationAccessory";
+import { handleTranslate, TranslationAccessory, Translations } from "./TranslationAccessory";
 import { translate } from "./utils";
 
 const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { message: Message; }) => {
@@ -60,6 +60,27 @@ function getMessageContent(message: Message) {
 
 let tooltipTimeout: any;
 
+// Auto-translate a batch of already-loaded messages (channel open / history load).
+// Sequential + capped to avoid hammering the translation API; skips your own,
+// empty, and already-translated messages.
+async function autoTranslateMessages(messages: any[]) {
+    if (!settings.store.autoTranslateReceived || !messages?.length) return;
+    const me = UserStore.getCurrentUser()?.id;
+
+    for (const message of messages.slice(-50)) {
+        if (!message || message.author?.id === me) continue;
+        if (Translations.has(message.id)) continue;
+
+        const content = getMessageContent(message);
+        if (!content) continue;
+
+        try {
+            const trans = await translate("received", content);
+            handleTranslate(message.id, trans);
+        } catch { /* ignore individual failures */ }
+    }
+}
+
 export default definePlugin({
     name: "Translate",
     description: "Translate messages with Google Translate, DeepL or Kagi.",
@@ -89,6 +110,17 @@ export default definePlugin({
                 const trans = await translate("received", content);
                 handleTranslate(message.id, trans);
             } catch { /* ignore translation failures */ }
+        },
+
+        // Translate the messages already in a channel when you open it.
+        CHANNEL_SELECT({ channelId }: { channelId: string | null; }) {
+            if (!channelId || !settings.store.autoTranslateReceived) return;
+            const msgs: any[] = (MessageStore.getMessages(channelId) as any)?._array ?? [];
+            autoTranslateMessages(msgs);
+        },
+
+        LOAD_MESSAGES_SUCCESS({ messages }: { messages: any[]; }) {
+            autoTranslateMessages(messages ?? []);
         }
     },
 
