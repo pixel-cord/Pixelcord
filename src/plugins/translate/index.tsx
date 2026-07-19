@@ -100,14 +100,20 @@ export default definePlugin({
     },
 
     async onBeforeMessageSend(_, message) {
-        if (!settings.store.autoTranslate) return;
         if (!message.content) return;
+        if (!settings.store.autoTranslate && !settings.store.lowercase) return;
 
-        setShouldShowTranslateEnabledTooltip?.(true);
-        clearTimeout(tooltipTimeout);
-        tooltipTimeout = setTimeout(() => setShouldShowTranslateEnabledTooltip?.(false), 2000);
+        if (settings.store.autoTranslate) {
+            setShouldShowTranslateEnabledTooltip?.(true);
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = setTimeout(() => setShouldShowTranslateEnabledTooltip?.(false), 2000);
 
-        const trans = await translate("sent", message.content);
-        message.content = trans.text;
+            const trans = await translate("sent", message.content);
+            message.content = trans.text;
+        }
+
+        if (settings.store.lowercase) {
+            message.content = message.content.toLowerCase();
+        }
     }
 });
