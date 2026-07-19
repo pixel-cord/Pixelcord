@@ -60,6 +60,13 @@ function getMessageContent(message: Message) {
 
 let tooltipTimeout: any;
 
+// "More natural" style: drop the period/exclamation mark at the end of each line
+// (not mid-sentence, so decimals/abbreviations are safe).
+function naturalize(text: string): string {
+    if (!settings.store.naturalStyle) return text;
+    return text.replace(/[.!]+(?=\n|$)/g, "");
+}
+
 // Auto-translate a batch of already-loaded messages (channel open / history load).
 // Sequential + capped to avoid hammering the translation API; skips your own,
 // empty, and already-translated messages.
@@ -76,6 +83,7 @@ async function autoTranslateMessages(messages: any[]) {
 
         try {
             const trans = await translate("received", content);
+            trans.text = naturalize(trans.text);
             handleTranslate(message.id, trans);
         } catch { /* ignore individual failures */ }
     }
@@ -108,6 +116,7 @@ export default definePlugin({
 
             try {
                 const trans = await translate("received", content);
+                trans.text = naturalize(trans.text);
                 handleTranslate(message.id, trans);
             } catch { /* ignore translation failures */ }
         },
@@ -150,7 +159,7 @@ export default definePlugin({
 
     async onBeforeMessageSend(_, message) {
         if (!message.content) return;
-        if (!settings.store.autoTranslate && !settings.store.lowercase) return;
+        if (!settings.store.autoTranslate && !settings.store.lowercase && !settings.store.naturalStyle) return;
 
         if (settings.store.autoTranslate) {
             setShouldShowTranslateEnabledTooltip?.(true);
@@ -164,5 +173,7 @@ export default definePlugin({
         if (settings.store.lowercase) {
             message.content = message.content.toLowerCase();
         }
+
+        message.content = naturalize(message.content);
     }
 });

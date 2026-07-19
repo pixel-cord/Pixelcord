@@ -59,7 +59,7 @@ function LanguageSelect({ settingsKey, includeAuto }: { settingsKey: typeof Lang
     );
 }
 
-type ToggleKey = "autoTranslate" | "autoTranslateReceived" | "lowercase";
+type ToggleKey = "autoTranslate" | "autoTranslateReceived" | "lowercase" | "naturalStyle";
 
 function SettingToggle({ settingsKey, title }: { settingsKey: ToggleKey; title: string; }) {
     const value = settings.use([settingsKey])[settingsKey] as boolean;
@@ -94,6 +94,7 @@ export function TranslateModal({ rootProps }: { rootProps: RenderModalProps; }) 
             <SettingToggle settingsKey="autoTranslate" title="Auto-traduzir mensagens enviadas" />
             <SettingToggle settingsKey="autoTranslateReceived" title="Auto-traduzir mensagens recebidas" />
             <SettingToggle settingsKey="lowercase" title="Enviar tudo em minúsculo" />
+            <SettingToggle settingsKey="naturalStyle" title="Estilo mais natural (sem ponto final / !)" />
         </Modal>
     );
 }

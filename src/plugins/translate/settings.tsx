@@ -84,6 +84,11 @@ export const settings = definePluginSettings({
         description: "Automatically translate incoming messages in the channel you're viewing",
         default: false
     },
+    naturalStyle: {
+        type: OptionType.BOOLEAN,
+        description: "More natural style — removes the final period (.) and exclamation mark (!) at the end of lines",
+        default: false
+    },
     showAutoTranslateTooltip: {
         type: OptionType.BOOLEAN,
         description: "Show a tooltip on the chat bar button when a message is auto-translated",
