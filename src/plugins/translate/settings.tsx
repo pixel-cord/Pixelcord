@@ -79,6 +79,11 @@ export const settings = definePluginSettings({
         description: "Write your messages in all lowercase before sending (applied after translation)",
         default: false
     },
+    autoTranslateReceived: {
+        type: OptionType.BOOLEAN,
+        description: "Automatically translate incoming messages in the channel you're viewing",
+        default: false
+    },
     showAutoTranslateTooltip: {
         type: OptionType.BOOLEAN,
         description: "Show a tooltip on the chat bar button when a message is auto-translated",

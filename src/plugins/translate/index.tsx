@@ -22,7 +22,7 @@ import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/Co
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
-import { ChannelStore, Menu } from "@webpack/common";
+import { ChannelStore, Menu, SelectedChannelStore, UserStore } from "@webpack/common";
 
 import { settings } from "./settings";
 import { setShouldShowTranslateEnabledTooltip, TranslateChatBarIcon, TranslateIcon } from "./TranslateIcon";
@@ -74,6 +74,23 @@ export default definePlugin({
     translate,
 
     renderMessageAccessory: props => <TranslationAccessory message={props.message} />,
+
+    flux: {
+        async MESSAGE_CREATE({ message }: { message: Message; }) {
+            if (!settings.store.autoTranslateReceived) return;
+            // only the channel you're looking at, and not your own messages
+            if (message.channel_id !== SelectedChannelStore.getChannelId()) return;
+            if (message.author?.id === UserStore.getCurrentUser()?.id) return;
+
+            const content = getMessageContent(message);
+            if (!content) return;
+
+            try {
+                const trans = await translate("received", content);
+                handleTranslate(message.id, trans);
+            } catch { /* ignore translation failures */ }
+        }
+    },
 
     chatBarButton: {
         icon: TranslateIcon,
