@@ -1,0 +1,30 @@
+.vc-spoof-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    min-width: 380px;
+}
+
+.vc-spoof-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--background-secondary, #2b2d31);
+    font-size: 14px;
+    color: var(--text-normal, #dbdee1);
+}
+
+.vc-spoof-card b {
+    color: var(--text-muted, #949ba4);
+    font-weight: 600;
+}
+
+.vc-spoof-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
