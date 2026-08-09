@@ -5,7 +5,7 @@
  */
 
 import { spawn } from "child_process";
-import { IpcMainInvokeEvent, session } from "electron";
+import { IpcMainInvokeEvent, session, shell } from "electron";
 import { existsSync } from "fs";
 
 const isWin = process.platform === "win32";
@@ -134,4 +134,25 @@ export async function warpDisconnect(_: IpcMainInvokeEvent, opts?: { binaryPath?
 export async function applyProxy(_: IpcMainInvokeEvent, on: boolean) {
     await setDiscordProxy(on ? PROXY_RULES : null);
     return { ok: true as const };
+}
+
+// Best-effort install of the official Cloudflare WARP client via the OS package
+// manager. Linux needs a sudo apt/dnf repo setup, so we don't automate it.
+export async function warpInstall(_: IpcMainInvokeEvent) {
+    let r: RunResult;
+    if (isWin) {
+        r = await capture("winget", ["install", "--id", "Cloudflare.Warp", "-e", "--accept-source-agreements", "--accept-package-agreements"], 600000);
+    } else if (isMac) {
+        r = await capture("brew", ["install", "--cask", "cloudflare-warp"], 600000);
+    } else {
+        return { ok: false as const, manual: true as const, log: "" };
+    }
+    cachedBin = undefined; // re-detect after install
+    const log = (r.stdout + "\n" + r.stderr + (r.error ? "\n" + r.error : "")).trim();
+    return { ok: r.code === 0, manual: false as const, log };
+}
+
+export async function warpOpenDownload(_: IpcMainInvokeEvent) {
+    try { await shell.openExternal("https://1.1.1.1/"); return { ok: true as const }; }
+    catch (e) { return { ok: false as const, error: String(e) }; }
 }

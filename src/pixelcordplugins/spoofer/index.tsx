@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
 import { Paragraph } from "@components/Paragraph";
-import { PixelCordDevs } from "@utils/constants";
+import { IS_MAC, IS_WINDOWS, PixelCordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
@@ -238,7 +238,24 @@ function WarpModal({ modalProps }: { modalProps: any; }) {
         setBusy(false);
     }
 
+    async function install() {
+        if (!Native) return;
+        setBusy(true);
+        showToast("Instalando o Cloudflare WARP… pode demorar um pouco");
+        const r = await Native.warpInstall();
+        if (r.manual) showToast("No Linux, instale pelo repositório/página oficial");
+        else showToast(r.ok ? "WARP instalado! Clique em Atualizar" : "Falha ao instalar — use a página de download");
+        await refresh();
+        setBusy(false);
+    }
+
     const connected = status?.connected;
+    const notInstalled = status?.installed === false;
+    const installHint = IS_WINDOWS
+        ? "Windows: instala via winget (Cloudflare.Warp)."
+        : IS_MAC
+            ? "macOS: instala via Homebrew (cask cloudflare-warp)."
+            : "Linux: adicione o repositório oficial da Cloudflare e instale cloudflare-warp (precisa de sudo) — veja a página de download.";
 
     return (
         <Modal {...modalProps} size="sm" title="Cloudflare WARP — IP / GeoIP">
@@ -251,6 +268,19 @@ function WarpModal({ modalProps }: { modalProps: any; }) {
                     <div>Cliente: {status == null ? "…" : status.installed ? `✅ ${status.version ?? "ok"}` : "⚠️ não encontrado"}</div>
                     <div>WARP (Discord): {connected == null ? "…" : connected ? "🟢 conectado" : "⚪ desligado"}</div>
                 </div>
+
+                {notInstalled && (
+                    <div className={cl("card")}>
+                        <div>O cliente oficial Cloudflare WARP não foi encontrado.</div>
+                        <div className={cl("row")}>
+                            {(IS_WINDOWS || IS_MAC) && (
+                                <Button color={Button.Colors.GREEN} disabled={busy} onClick={install}>Instalar automaticamente</Button>
+                            )}
+                            <Button look={Button.Looks.LINK} color={Button.Colors.PRIMARY} disabled={busy} onClick={() => Native?.warpOpenDownload()}>Abrir página de download</Button>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted, #949ba4)" }}>{installHint}</div>
+                    </div>
+                )}
 
                 <div className={cl("card")}>
                     <div><b>IP atual:</b> {trace?.ip ?? "…"}</div>
