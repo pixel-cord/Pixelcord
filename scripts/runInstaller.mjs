@@ -128,6 +128,28 @@ console.log("Now running Installer...");
 const argStart = process.argv.indexOf("--");
 const args = argStart === -1 ? [] : process.argv.slice(argStart + 1);
 
+const installerActions = [
+    "--install",
+    "-install",
+    "--uninstall",
+    "-uninstall",
+    "--repair",
+    "-repair",
+    "--install-openasar",
+    "-install-openasar",
+    "--uninstall-openasar",
+    "-uninstall-openasar"
+];
+const targetFlags = ["--branch", "-branch", "--location", "-location"];
+
+function hasFlag(flags) {
+    return args.some(arg => flags.some(flag => arg === flag || arg.startsWith(`${flag}=`)));
+}
+
+if (hasFlag(installerActions) && !hasFlag(targetFlags)) {
+    args.push("--branch", "auto");
+}
+
 try {
     execFileSync(installerBin, args, {
         stdio: "inherit",
@@ -138,6 +160,12 @@ try {
             PIXELCORD_DEV_INSTALL: "1"
         }
     });
-} catch {
-    console.error("Something went wrong. Please check the logs above.");
+} catch (error) {
+    const status = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number"
+        ? error.status
+        : 1;
+
+    console.error(`Pixelotl installer failed with exit code ${status}.`);
+    if (error instanceof Error) console.error(error.message);
+    process.exitCode = status || 1;
 }
