@@ -15,11 +15,21 @@ import { classNameFactory } from "@utils/css";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
+import { ModalCloseButton as RawModalCloseButton, ModalContent as RawModalContent, ModalFooter as RawModalFooter, ModalHeader as RawModalHeader, ModalRoot as RawModalRoot, ModalSize, openModal } from "@utils/modal";
 import definePlugin, { IconComponent, OptionType } from "@utils/types";
-import { Button, FluxDispatcher, Modal, openModal, PresenceStore, React, showToast, Slider, TextInput, UserStore } from "@webpack/common";
+import { RenderModalProps } from "@vencord/discord-types";
+import { Button, FluxDispatcher, PresenceStore, React, showToast, Slider, Text, TextInput, UserStore } from "@webpack/common";
+import type { ComponentType, PropsWithChildren } from "react";
 
 const logger = new Logger("SpotifyLyricsMessage");
 const cl = classNameFactory("vc-slmsg-");
+
+type ModalShell = ComponentType<PropsWithChildren<{ className?: string; }>>;
+const ModalRoot = RawModalRoot as ComponentType<PropsWithChildren<RenderModalProps & { size?: ModalSize; className?: string; }>>;
+const ModalHeader = RawModalHeader as ModalShell;
+const ModalContent = RawModalContent as ModalShell;
+const ModalFooter = RawModalFooter as ModalShell;
+const ModalCloseButton = RawModalCloseButton as ComponentType<{ onClick(): void; }>;
 
 interface SyncedLyric { time: number; text: string | null; }
 interface Track { id: string; name: string; duration: number; isLocal: boolean; artists: { name: string; }[]; }
@@ -302,13 +312,18 @@ function stopSinging() {
 }
 
 // ── config + activate modal (left click) ─────────────────────────────
-function SingModal({ modalProps, channelId }: { modalProps: any; channelId: string; }) {
+function SingModal({ modalProps, channelId }: { modalProps: RenderModalProps; channelId: string; }) {
     const isActive = useActive();
     const { emoji, minGap, offset, ignoreParens, lowercase, uppercase, removeAccents, naturalStyle } = settings.use(["emoji", "minGap", "offset", "ignoreParens", "lowercase", "uppercase", "removeAccents", "naturalStyle"]);
 
     return (
-        <Modal {...modalProps} size="sm" title="Cantar a música do Spotify">
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+        <ModalRoot {...modalProps} size={ModalSize.SMALL}>
+            <ModalHeader>
+                <Text variant="heading-lg/semibold">Cantar a música do Spotify</Text>
+                <ModalCloseButton onClick={modalProps.onClose} />
+            </ModalHeader>
+            <ModalContent>
+                <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <Paragraph>
                     Envia as letras sincronizadas da música do Spotify como mensagens neste chat, seguindo a música.
                 </Paragraph>
@@ -381,6 +396,9 @@ function SingModal({ modalProps, channelId }: { modalProps: any; channelId: stri
                     <Switch checked={naturalStyle} onChange={(v: boolean) => (settings.store.naturalStyle = v)} />
                 </div>
 
+                </div>
+            </ModalContent>
+            <ModalFooter>
                 <Button
                     color={isActive ? Button.Colors.RED : Button.Colors.BRAND}
                     onClick={() => {
@@ -400,8 +418,8 @@ function SingModal({ modalProps, channelId }: { modalProps: any; channelId: stri
                 >
                     {isActive ? "Parar de cantar" : "Começar a cantar 🎤"}
                 </Button>
-            </div>
-        </Modal>
+            </ModalFooter>
+        </ModalRoot>
     );
 }
 
