@@ -56,6 +56,16 @@ const settings = definePluginSettings({
         description: "Enviar as letras tudo em minúsculo",
         default: false
     },
+    uppercase: {
+        type: OptionType.BOOLEAN,
+        description: "Enviar as letras tudo em maiúsculo",
+        default: false
+    },
+    removeAccents: {
+        type: OptionType.BOOLEAN,
+        description: "Remover acentos das letras",
+        default: false
+    },
     naturalStyle: {
         type: OptionType.BOOLEAN,
         description: "Mais natural — remove o ponto final (.) e ! do fim das linhas",
@@ -63,12 +73,16 @@ const settings = definePluginSettings({
     }
 });
 
-// Casual styling for a lyric line: optional lowercase + drop trailing . / !
+// Formats a lyric line before it is sent without affecting the source lyric data.
 function styleText(text: string): string {
-    let t = text;
-    if (settings.store.lowercase) t = t.toLowerCase();
-    if (settings.store.naturalStyle) t = t.replace(/[.!]+$/g, "").trimEnd();
-    return t;
+    let formatted = settings.store.removeAccents
+        ? text.normalize("NFD").replace(/\p{M}/gu, "")
+        : text;
+
+    if (settings.store.uppercase) formatted = formatted.toUpperCase();
+    else if (settings.store.lowercase) formatted = formatted.toLowerCase();
+    if (settings.store.naturalStyle) formatted = formatted.replace(/[.!]+$/g, "").trimEnd();
+    return formatted;
 }
 
 // Strips backing-vocal parentheticals like "(what?)" when the option is on. If a
@@ -92,10 +106,12 @@ let positionBase = 0;
 let positionStamp = 0;
 let lyrics: SyncedLyric[] | null = null;
 let fetchToken = 0;
+let lyricsController: AbortController | undefined;
 
 let lastSentLineTime: number | null = null;
 let lastSentAt = 0;
 let tickHandle: number | undefined;
+let sending = false;
 
 const TICK_MS = 400;
 
@@ -124,8 +140,13 @@ function findCurrentLine(pos: number): SyncedLyric | null {
 }
 
 async function fetchLyrics(trackId: string): Promise<SyncedLyric[] | null> {
+    lyricsController?.abort();
+    const controller = new AbortController();
+    lyricsController = controller;
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
     try {
-        const res = await fetch(LYRICS_API + trackId);
+        const res = await fetch(LYRICS_API + encodeURIComponent(trackId), { signal: controller.signal });
         if (!res.ok) return null;
         const json = await res.json();
         const data = json?.data;
@@ -143,8 +164,11 @@ async function fetchLyrics(trackId: string): Promise<SyncedLyric[] | null> {
         }
         return parsed.length >= 2 ? parsed : null;
     } catch (e) {
-        logger.error("Failed to fetch lyrics for", trackId, e);
+        if (!controller.signal.aborted) logger.error("Failed to fetch lyrics for", trackId, e);
         return null;
+    } finally {
+        clearTimeout(timeout);
+        if (lyricsController === controller) lyricsController = undefined;
     }
 }
 
@@ -159,6 +183,7 @@ async function onPlayerState(state: PlayerState) {
         currentDuration = 0;
         lyrics = null;
         fetchToken++;
+        lyricsController?.abort();
         return;
     }
 
@@ -169,6 +194,7 @@ async function onPlayerState(state: PlayerState) {
     lyrics = null;
     lastSentLineTime = null;
 
+    lyricsController?.abort();
     const token = ++fetchToken;
     const fetched = track.isLocal ? null : await fetchLyrics(track.id);
     if (token !== fetchToken) return;
@@ -214,8 +240,8 @@ function isSpotifyPlaying(): boolean {
     }
 }
 
-function tick() {
-    if (!active || !targetChannelId || !currentTrackId || !lyrics) return;
+async function tick() {
+    if (!active || !isPlaying || !targetChannelId || !currentTrackId || !lyrics || sending) return;
 
     const pos = currentPosition();
     if (currentDuration > 0) {
@@ -238,9 +264,14 @@ function tick() {
 
     const prefix = settings.store.emoji ? `${settings.store.emoji} ` : "";
     try {
-        sendMessage(targetChannelId, { content: `${prefix}${text}`.slice(0, 2000) });
+        sending = true;
+        await sendMessage(targetChannelId, { content: `${prefix}${text}`.slice(0, 2000) });
     } catch (e) {
         logger.error("Failed to send lyric", e);
+        stopSinging();
+        showToast("Não foi possível enviar a letra. O envio foi interrompido.");
+    } finally {
+        sending = false;
     }
 }
 
@@ -258,6 +289,8 @@ function startSinging(channelId: string) {
 }
 
 function stopSinging() {
+    fetchToken++;
+    lyricsController?.abort();
     if (!active && !tickHandle) return;
     setActive(false);
     FluxDispatcher.unsubscribe("SPOTIFY_PLAYER_STATE", onPlayerState);
@@ -271,7 +304,7 @@ function stopSinging() {
 // ── config + activate modal (left click) ─────────────────────────────
 function SingModal({ modalProps, channelId }: { modalProps: any; channelId: string; }) {
     const isActive = useActive();
-    const { emoji, minGap, offset, ignoreParens, lowercase, naturalStyle } = settings.use(["emoji", "minGap", "offset", "ignoreParens", "lowercase", "naturalStyle"]);
+    const { emoji, minGap, offset, ignoreParens, lowercase, uppercase, removeAccents, naturalStyle } = settings.use(["emoji", "minGap", "offset", "ignoreParens", "lowercase", "uppercase", "removeAccents", "naturalStyle"]);
 
     return (
         <Modal {...modalProps} size="sm" title="Cantar a música do Spotify">
@@ -318,7 +351,29 @@ function SingModal({ modalProps, channelId }: { modalProps: any; channelId: stri
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Paragraph>Tudo em minúsculo</Paragraph>
-                    <Switch checked={lowercase} onChange={(v: boolean) => (settings.store.lowercase = v)} />
+                    <Switch
+                        checked={lowercase}
+                        onChange={(v: boolean) => {
+                            settings.store.lowercase = v;
+                            if (v) settings.store.uppercase = false;
+                        }}
+                    />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <Paragraph>Tudo em maiúsculo</Paragraph>
+                    <Switch
+                        checked={uppercase}
+                        onChange={(v: boolean) => {
+                            settings.store.uppercase = v;
+                            if (v) settings.store.lowercase = false;
+                        }}
+                    />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <Paragraph>Remover acentos das letras</Paragraph>
+                    <Switch checked={removeAccents} onChange={(v: boolean) => (settings.store.removeAccents = v)} />
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
